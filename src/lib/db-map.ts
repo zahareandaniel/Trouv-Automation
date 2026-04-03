@@ -31,7 +31,6 @@ export function mapPostCopyFields(r: Record<string, unknown>): Pick<
   | "x_post"
   | "x_cta"
   | "hashtags"
-  | "created_by_model"
   | "linkedin_image_url"
   | "instagram_image_url"
   | "x_image_url"
@@ -47,7 +46,6 @@ export function mapPostCopyFields(r: Record<string, unknown>): Pick<
     x_post: strOrNull(r.x_post),
     x_cta: strOrNull(r.x_cta),
     hashtags: hashtagsFromRow(r.hashtags),
-    created_by_model: strOrNull(r.created_by_model),
     linkedin_image_url: strOrNull(r.linkedin_image_url),
     instagram_image_url: strOrNull(r.instagram_image_url),
     x_image_url: strOrNull(r.x_image_url),

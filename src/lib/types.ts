@@ -37,8 +37,6 @@ export interface ContentRequest {
   x_post: string | null;
   x_cta: string | null;
   hashtags: string[] | null;
-  /** Model id used for last generation (if column present). */
-  created_by_model: string | null;
 
   linkedin_image_url: string | null;
   instagram_image_url: string | null;

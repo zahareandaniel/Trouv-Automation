@@ -91,7 +91,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const { output, model } = gen;
+  const { output } = gen;
 
   const updatePayload: Record<string, unknown> = {
     linkedin_hook: output.linkedin_hook,
@@ -104,7 +104,6 @@ export async function POST(request: Request) {
     x_post: output.x_post,
     x_cta: output.x_cta,
     hashtags: output.hashtags,
-    created_by_model: model,
     status: "generated",
   };
 

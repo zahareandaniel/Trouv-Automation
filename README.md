@@ -6,7 +6,7 @@ Private editorial workflow for **Trouv Chauffeurs**: ideas → platforms → Ope
 
 Use **only** these tables (already created in your project):
 
-- `public.content_posts` — briefs, `platforms text[]`, generated copy columns (`linkedin_*`, `instagram_*`, `x_*`, `hashtags`, `created_by_model`, optional `*_image_url`)
+- `public.content_posts` — briefs, `platforms text[]`, generated copy columns (`linkedin_*`, `instagram_*`, `x_*`, `hashtags`, optional `*_image_url`)
 - `public.content_reviews` — still keyed by `content_request_id` (post UUID) unless you rename the FK column; `generated_content_id` should be nullable
 - `public.publish_logs` — same FK naming as above; `generated_content_id` nullable
 - `public.app_settings`
