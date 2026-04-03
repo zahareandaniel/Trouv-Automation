@@ -34,13 +34,12 @@ export async function POST(request: Request) {
     );
   }
 
-  const { topic, notes, audience, content_type, platforms } = parsed.data;
+  const { topic, audience, content_type, platforms } = parsed.data;
 
   const { data: req, error } = await supabase
     .from("content_posts")
     .insert({
       topic,
-      notes: notes ?? null,
       audience,
       content_type,
       status: "draft",

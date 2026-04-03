@@ -16,7 +16,6 @@ function bannedList(settings: AppSettings | null): string[] {
 
 export async function generateSocialCopy(input: {
   topic: string;
-  notes: string | null;
   audience: string;
   content_type: string;
   platforms: TargetPlatform[];
@@ -52,7 +51,6 @@ hashtags (array of strings, no leading #)`;
 
   const user = JSON.stringify({
     topic: input.topic,
-    notes: input.notes,
     audience: input.audience,
     content_type: input.content_type,
     brand_name: brandName,
@@ -91,7 +89,6 @@ hashtags (array of strings, no leading #)`;
 
 export async function reviewGeneratedCopy(input: {
   topic: string;
-  notes: string | null;
   audience: string;
   content_type: string;
   generated: GenerationOutput;
@@ -133,7 +130,6 @@ Return JSON only:
   const user = JSON.stringify({
     brief: {
       topic: input.topic,
-      notes: input.notes,
       audience: input.audience,
       content_type: input.content_type,
     },

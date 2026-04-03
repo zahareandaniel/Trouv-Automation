@@ -38,7 +38,6 @@ export function NewIdeaForm() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           topic: fd.get("topic"),
-          notes: fd.get("notes") || null,
           audience: fd.get("audience"),
           content_type: fd.get("content_type"),
           platforms,
@@ -61,7 +60,6 @@ export function NewIdeaForm() {
   return (
     <form onSubmit={onSubmit} className="mt-8 max-w-xl space-y-6">
       <Field label="Topic" name="topic" required />
-      <Field label="Notes" name="notes" optional textarea />
       <Field
         label="Audience"
         name="audience"
@@ -178,7 +176,6 @@ export function IdeaEditor({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           topic: fd.get("topic"),
-          notes: (fd.get("notes") as string) || null,
           audience: fd.get("audience"),
           content_type: fd.get("content_type"),
           platforms,
@@ -250,17 +247,6 @@ export function IdeaEditor({
             name="topic"
             required
             defaultValue={request.topic}
-            className="mt-1.5 w-full border border-border bg-canvas px-3 py-2 text-sm text-text outline-none focus:border-accent"
-          />
-        </div>
-        <div>
-          <label className="font-mono text-[10px] uppercase tracking-wider text-muted">
-            Notes
-          </label>
-          <textarea
-            name="notes"
-            rows={3}
-            defaultValue={request.notes ?? ""}
             className="mt-1.5 w-full border border-border bg-canvas px-3 py-2 text-sm text-text outline-none focus:border-accent"
           />
         </div>

@@ -79,7 +79,6 @@ export async function POST(request: Request) {
   try {
     gen = await generateSocialCopy({
       topic: String(req.topic),
-      notes: req.notes != null ? String(req.notes) : null,
       audience: String(req.audience),
       content_type: String(req.content_type),
       platforms,

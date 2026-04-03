@@ -18,7 +18,6 @@ export type ReviewVerdict = "approve" | "revise" | "reject";
 export interface ContentRequest {
   id: string;
   topic: string;
-  notes: string | null;
   audience: string;
   content_type: string;
   status: ContentStatus;

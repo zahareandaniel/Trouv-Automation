@@ -57,7 +57,6 @@ export async function PATCH(request: Request, ctx: Ctx) {
 
   const patch: Record<string, unknown> = {};
   if (parsed.data.topic !== undefined) patch.topic = parsed.data.topic;
-  if (parsed.data.notes !== undefined) patch.notes = parsed.data.notes;
   if (parsed.data.audience !== undefined) patch.audience = parsed.data.audience;
   if (parsed.data.content_type !== undefined)
     patch.content_type = parsed.data.content_type;

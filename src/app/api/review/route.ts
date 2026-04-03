@@ -89,7 +89,6 @@ export async function POST(request: Request) {
   try {
     rev = await reviewGeneratedCopy({
       topic: String(req.topic),
-      notes: req.notes != null ? String(req.notes) : null,
       audience: String(req.audience),
       content_type: String(req.content_type),
       generated: draftOutput,
