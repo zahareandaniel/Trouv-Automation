@@ -6,12 +6,13 @@ Private editorial workflow for **Trouv Chauffeurs**: ideas → platforms → Ope
 
 Use **only** these tables (already created in your project):
 
-- `public.content_posts` — briefs / pipeline rows (`content_type`, not `goal`)
-- `public.content_request_platforms` — target platforms per post (FK to post id)
+- `public.content_posts` — briefs / pipeline rows (`content_type`, `platforms` as `text[]`)
 - `public.generated_contents`
 - `public.content_reviews`
 - `public.publish_logs`
 - `public.app_settings`
+
+Add `platforms text[]` on `content_posts` in Supabase if it is not already present (no junction table for platforms).
 
 ## Setup
 
@@ -122,7 +123,7 @@ src/
 ## Fully working
 
 - JWT session cookie `trouv_session` (24h), `proxy.ts` protection
-- Ideas CRUD + platform rows
+- Ideas CRUD (`content_posts.platforms` array)
 - OpenAI generation → `generated_contents` (previous rows deactivated)
 - OpenAI review → `content_reviews`
 - Approve / reject lifecycle

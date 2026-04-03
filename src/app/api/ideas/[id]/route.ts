@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSessionEmail } from "@/lib/auth";
 import { mapRequest } from "@/lib/db-map";
-import { loadPlatforms } from "@/lib/request-helpers";
 import { createServiceClient } from "@/lib/supabase/server";
 import { updateIdeaBodySchema } from "@/lib/validations";
 
@@ -60,6 +59,7 @@ export async function PATCH(request: Request, ctx: Ctx) {
   if (parsed.data.audience !== undefined) patch.audience = parsed.data.audience;
   if (parsed.data.content_type !== undefined)
     patch.content_type = parsed.data.content_type;
+  if (parsed.data.platforms !== undefined) patch.platforms = parsed.data.platforms;
 
   if (Object.keys(patch).length > 0) {
     const { error: u1 } = await supabase
@@ -67,23 +67,6 @@ export async function PATCH(request: Request, ctx: Ctx) {
       .update(patch)
       .eq("id", id);
     if (u1) return NextResponse.json({ error: u1.message }, { status: 500 });
-  }
-
-  if (parsed.data.platforms) {
-    const { error: delE } = await supabase
-      .from("content_request_platforms")
-      .delete()
-      .eq("content_request_id", id);
-    if (delE) return NextResponse.json({ error: delE.message }, { status: 500 });
-
-    const rows = parsed.data.platforms.map((platform) => ({
-      content_request_id: id,
-      platform,
-    }));
-    const { error: insE } = await supabase
-      .from("content_request_platforms")
-      .insert(rows);
-    if (insE) return NextResponse.json({ error: insE.message }, { status: 500 });
   }
 
   const { data: fresh, error: f2 } = await supabase
@@ -96,11 +79,8 @@ export async function PATCH(request: Request, ctx: Ctx) {
     return NextResponse.json({ error: f2?.message ?? "Reload failed" }, { status: 500 });
   }
 
-  const platforms = await loadPlatforms(supabase, id);
-
   return NextResponse.json({
     request: mapRequest(fresh as Record<string, unknown>),
-    platforms,
   });
 }
 

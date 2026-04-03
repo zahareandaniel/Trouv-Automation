@@ -139,18 +139,15 @@ function Field({
   );
 }
 
-export function IdeaEditor({
-  request,
-  platforms: initialPlatforms,
-}: {
-  request: ContentRequest;
-  platforms: TargetPlatform[];
-}) {
+export function IdeaEditor({ request }: { request: ContentRequest }) {
   const router = useRouter();
   const [pending, setPending] = useState(false);
-  const [selected, setSelected] = useState<Set<TargetPlatform>>(
-    () => new Set(initialPlatforms),
-  );
+  const [selected, setSelected] = useState<Set<TargetPlatform>>(() => {
+    const known = new Set<string>(PLATFORMS);
+    return new Set(
+      request.platforms.filter((p): p is TargetPlatform => known.has(p)),
+    );
+  });
 
   function toggle(p: TargetPlatform) {
     setSelected((s) => {

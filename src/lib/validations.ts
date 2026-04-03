@@ -11,14 +11,14 @@ export const createIdeaBodySchema = z.object({
   topic: z.string().min(1, "Topic is required"),
   audience: z.string().min(1, "Audience is required"),
   content_type: z.string().min(1, "Content type is required"),
-  platforms: z.array(targetPlatformSchema).min(1, "Select at least one platform"),
+  platforms: z.array(z.string()).min(1, "Select at least one platform"),
 });
 
 export const updateIdeaBodySchema = z.object({
   topic: z.string().min(1).optional(),
   audience: z.string().min(1).optional(),
   content_type: z.string().min(1).optional(),
-  platforms: z.array(targetPlatformSchema).min(1).optional(),
+  platforms: z.array(z.string()).min(1).optional(),
 });
 
 export const generateBodySchema = z.object({

@@ -20,16 +20,11 @@ export interface ContentRequest {
   topic: string;
   audience: string;
   content_type: string;
+  /** Stored as `content_posts.platforms` (text[]). */
+  platforms: string[];
   status: ContentStatus;
   created_at: string;
   updated_at: string;
-}
-
-export interface ContentRequestPlatform {
-  id: string;
-  content_request_id: string;
-  platform: TargetPlatform;
-  created_at: string;
 }
 
 export interface GeneratedContent {

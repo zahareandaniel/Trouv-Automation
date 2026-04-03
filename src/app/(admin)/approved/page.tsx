@@ -2,17 +2,16 @@ import {
   getSuccessfulPublishKeys,
   listApproved,
   mapActiveGeneratedForRequests,
-  mapPlatformsForRequests,
 } from "@/lib/queries";
+import { targetPlatformsFromStrings } from "@/lib/platforms";
 import { PlatformQueueButton } from "@/components/approved-queue-buttons";
 import type { TargetPlatform } from "@/lib/types";
 
 export default async function ApprovedPage() {
   const rows = await listApproved();
   const ids = rows.map((r) => r.id);
-  const [genMap, platformMap, queued] = await Promise.all([
+  const [genMap, queued] = await Promise.all([
     mapActiveGeneratedForRequests(ids),
-    mapPlatformsForRequests(ids),
     getSuccessfulPublishKeys(ids),
   ]);
 
@@ -29,7 +28,7 @@ export default async function ApprovedPage() {
         ) : (
           rows.map((r) => {
             const g = genMap.get(r.id);
-            const plats = platformMap.get(r.id) ?? [];
+            const plats = targetPlatformsFromStrings(r.platforms);
             return (
               <div key={r.id} className="border border-border bg-surface p-5">
                 <h2 className="font-serif text-xl text-text">{r.topic}</h2>

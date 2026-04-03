@@ -42,6 +42,7 @@ export async function POST(request: Request) {
       topic,
       audience,
       content_type,
+      platforms,
       status: "draft",
     })
     .select("*")
@@ -54,23 +55,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const id = String((req as Record<string, unknown>).id);
-  const platformRows = platforms.map((platform) => ({
-    content_request_id: id,
-    platform,
-  }));
-
-  const { error: pErr } = await supabase
-    .from("content_request_platforms")
-    .insert(platformRows);
-
-  if (pErr) {
-    await supabase.from("content_posts").delete().eq("id", id);
-    return NextResponse.json({ error: pErr.message }, { status: 500 });
-  }
-
   return NextResponse.json({
     request: mapRequest(req as Record<string, unknown>),
-    platforms,
   });
 }

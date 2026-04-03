@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getSessionEmail } from "@/lib/auth";
 import { mapGenerated, mapRequest } from "@/lib/db-map";
 import { generateSocialCopy } from "@/lib/openai";
-import { loadPlatforms } from "@/lib/request-helpers";
+import { targetPlatformsFromDb } from "@/lib/platforms";
 import { ensureAppSettings } from "@/lib/settings";
 import { createServiceClient } from "@/lib/supabase/server";
 import { generateBodySchema } from "@/lib/validations";
@@ -57,7 +57,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const platforms = await loadPlatforms(supabase, contentRequestId);
+  const platforms = targetPlatformsFromDb(req.platforms);
   if (!platforms.length) {
     return NextResponse.json(
       { error: "No target platforms configured for this request" },

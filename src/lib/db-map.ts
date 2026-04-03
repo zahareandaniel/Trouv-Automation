@@ -1,9 +1,9 @@
+import { platformsFromDb } from "@/lib/platforms";
 import type {
   AppSettings,
   ContentRequest,
   ContentReview,
   GeneratedContent,
-  TargetPlatform,
 } from "@/lib/types";
 
 export function mapRequest(r: Record<string, unknown>): ContentRequest {
@@ -12,6 +12,7 @@ export function mapRequest(r: Record<string, unknown>): ContentRequest {
     topic: String(r.topic ?? ""),
     audience: String(r.audience ?? ""),
     content_type: String(r.content_type ?? ""),
+    platforms: platformsFromDb(r.platforms),
     status: r.status as ContentRequest["status"],
     created_at: String(r.created_at ?? ""),
     updated_at: String(r.updated_at ?? ""),
@@ -100,6 +101,3 @@ export function mapSettings(r: Record<string, unknown>): AppSettings {
   };
 }
 
-export function mapPlatformRow(r: Record<string, unknown>): TargetPlatform {
-  return r.platform as TargetPlatform;
-}

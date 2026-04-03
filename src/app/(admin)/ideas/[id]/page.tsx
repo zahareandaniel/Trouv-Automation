@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { IdeaEditor } from "@/components/idea-forms";
-import { getPlatformsForRequest, getRequest } from "@/lib/queries";
+import { getRequest } from "@/lib/queries";
 
 export default async function IdeaDetailPage({
   params,
@@ -16,8 +16,6 @@ export default async function IdeaDetailPage({
     redirect(`/drafts/${id}`);
   }
 
-  const platforms = await getPlatformsForRequest(id);
-
   return (
     <div>
       <Link
@@ -27,7 +25,7 @@ export default async function IdeaDetailPage({
         ← Ideas
       </Link>
       <h1 className="mt-6 font-serif text-3xl text-text">{request.topic}</h1>
-      <IdeaEditor request={request} platforms={platforms} />
+      <IdeaEditor request={request} />
     </div>
   );
 }

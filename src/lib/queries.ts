@@ -5,7 +5,6 @@ import type {
   ContentReview,
   GeneratedContent,
   PublishLog,
-  TargetPlatform,
 } from "@/lib/types";
 
 export async function getDashboardStats() {
@@ -112,39 +111,6 @@ export async function getRequest(id: string): Promise<ContentRequest | null> {
   if (error) throw new Error(error.message);
   if (!data) return null;
   return mapRequest(data as Record<string, unknown>);
-}
-
-export async function getPlatformsForRequest(
-  id: string,
-): Promise<TargetPlatform[]> {
-  const { data, error } = await createServiceClient()
-    .from("content_request_platforms")
-    .select("platform")
-    .eq("content_request_id", id);
-
-  if (error) throw new Error(error.message);
-  return (data ?? []).map((r) => r.platform as TargetPlatform);
-}
-
-export async function mapPlatformsForRequests(
-  requestIds: string[],
-): Promise<Map<string, TargetPlatform[]>> {
-  const m = new Map<string, TargetPlatform[]>();
-  if (!requestIds.length) return m;
-  const { data, error } = await createServiceClient()
-    .from("content_request_platforms")
-    .select("content_request_id, platform")
-    .in("content_request_id", requestIds);
-
-  if (error) throw new Error(error.message);
-  for (const row of data ?? []) {
-    const id = String(row.content_request_id);
-    const p = row.platform as TargetPlatform;
-    const arr = m.get(id) ?? [];
-    arr.push(p);
-    m.set(id, arr);
-  }
-  return m;
 }
 
 export async function getActiveGenerated(
