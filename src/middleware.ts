@@ -26,19 +26,23 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  const secret = process.env.ADMIN_JWT_SECRET;
-  if (!secret || secret.length < 16) {
-    return new NextResponse("ADMIN_JWT_SECRET missing or too short.", {
-      status: 500,
-    });
-  }
-
   const token = request.cookies.get(SESSION_COOKIE_NAME)?.value;
+
+  /* Unauthenticated: no JWT secret needed — send to login or 401 API */
   if (!token) {
     if (pathname.startsWith("/api/")) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
     return NextResponse.redirect(new URL("/login", request.url));
+  }
+
+  /* Session cookie present — must verify (requires ADMIN_JWT_SECRET) */
+  const secret = process.env.ADMIN_JWT_SECRET;
+  if (!secret || secret.length < 16) {
+    return new NextResponse(
+      "Server misconfiguration: set ADMIN_JWT_SECRET (min 16 chars) in the deployment environment.",
+      { status: 500 },
+    );
   }
 
   try {

@@ -11,10 +11,25 @@ function fmt(iso: string) {
 }
 
 export default async function DashboardPage() {
-  const [stats, recent] = await Promise.all([
-    getDashboardStats(),
-    listRecentRequests(10),
-  ]);
+  let stats: Awaited<ReturnType<typeof getDashboardStats>>;
+  let recent: Awaited<ReturnType<typeof listRecentRequests>>;
+  let loadError: string | null = null;
+
+  try {
+    [stats, recent] = await Promise.all([
+      getDashboardStats(),
+      listRecentRequests(10),
+    ]);
+  } catch (e) {
+    loadError = e instanceof Error ? e.message : "Failed to load dashboard data";
+    stats = {
+      totalIdeas: 0,
+      draftsPending: 0,
+      approved: 0,
+      scheduled: 0,
+    };
+    recent = [];
+  }
 
   const cards = [
     { label: "Total ideas", value: stats.totalIdeas },
@@ -29,6 +44,16 @@ export default async function DashboardPage() {
         <h1 className="font-serif text-3xl text-text">Dashboard</h1>
         <p className="mt-2 text-sm text-muted">Pipeline overview</p>
       </header>
+
+      {loadError ? (
+        <div className="mb-8 border border-danger/40 bg-canvas p-4 text-sm">
+          <p className="font-mono text-danger">{loadError}</p>
+          <p className="mt-2 text-muted">
+            Add missing env vars in Vercel → Project → Settings → Environment
+            Variables, then redeploy.
+          </p>
+        </div>
+      ) : null}
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {cards.map((c) => (

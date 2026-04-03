@@ -22,8 +22,10 @@ export async function signSessionToken(email: string) {
 }
 
 export async function verifySessionToken(token: string): Promise<string | null> {
+  const s = process.env.ADMIN_JWT_SECRET;
+  if (!s || s.length < 16) return null;
   try {
-    const { payload } = await jwtVerify(token, secretKey());
+    const { payload } = await jwtVerify(token, new TextEncoder().encode(s));
     return typeof payload.sub === "string" ? payload.sub : null;
   } catch {
     return null;

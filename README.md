@@ -43,6 +43,12 @@ Open [http://localhost:3000](http://localhost:3000) → sign in at `/login`.
 
 Secrets never go to the client.
 
+### Vercel
+
+In the project **Settings → Environment Variables**, add **every** variable from `.env.example` for Production (and Preview if you use it). If `ADMIN_JWT_SECRET` or `SUPABASE_SERVICE_ROLE_KEY` is missing, API routes and signed-in pages will fail after login.
+
+Opening `/` or `/login` without a session cookie no longer requires `ADMIN_JWT_SECRET` in middleware (so the login page can load); signing in still requires a valid `ADMIN_JWT_SECRET` (≥16 characters).
+
 ## Final folder structure
 
 ```
