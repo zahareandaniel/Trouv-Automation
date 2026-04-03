@@ -1,4 +1,4 @@
-/** Mirrors DB enums on content_requests.status */
+/** Mirrors DB enums on content_posts.status */
 export type ContentStatus =
   | "draft"
   | "generated"
@@ -20,7 +20,7 @@ export interface ContentRequest {
   topic: string;
   notes: string | null;
   audience: string;
-  goal: string;
+  content_type: string;
   status: ContentStatus;
   created_at: string;
   updated_at: string;

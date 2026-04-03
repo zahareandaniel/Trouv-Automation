@@ -40,7 +40,7 @@ export function NewIdeaForm() {
           topic: fd.get("topic"),
           notes: fd.get("notes") || null,
           audience: fd.get("audience"),
-          goal: fd.get("goal"),
+          content_type: fd.get("content_type"),
           platforms,
         }),
       });
@@ -62,8 +62,18 @@ export function NewIdeaForm() {
     <form onSubmit={onSubmit} className="mt-8 max-w-xl space-y-6">
       <Field label="Topic" name="topic" required />
       <Field label="Notes" name="notes" optional textarea />
-      <Field label="Audience" name="audience" required hint="DB enum value" />
-      <Field label="Goal" name="goal" required hint="DB enum value" />
+      <Field
+        label="Audience"
+        name="audience"
+        required
+        hint="Use the labels you want tracked internally."
+      />
+      <Field
+        label="Content type"
+        name="content_type"
+        required
+        hint="Use the labels you want tracked internally."
+      />
       <div>
         <p className="font-mono text-[10px] uppercase tracking-wider text-muted">
           Platforms
@@ -170,7 +180,7 @@ export function IdeaEditor({
           topic: fd.get("topic"),
           notes: (fd.get("notes") as string) || null,
           audience: fd.get("audience"),
-          goal: fd.get("goal"),
+          content_type: fd.get("content_type"),
           platforms,
         }),
       });
@@ -267,12 +277,12 @@ export function IdeaEditor({
         </div>
         <div>
           <label className="font-mono text-[10px] uppercase tracking-wider text-muted">
-            Goal *
+            Content type *
           </label>
           <input
-            name="goal"
+            name="content_type"
             required
-            defaultValue={request.goal}
+            defaultValue={request.content_type}
             className="mt-1.5 w-full border border-border bg-canvas px-3 py-2 text-sm text-text outline-none focus:border-accent"
           />
         </div>

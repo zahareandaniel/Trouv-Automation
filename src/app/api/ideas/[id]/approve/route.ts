@@ -23,7 +23,7 @@ export async function PATCH(_request: Request, ctx: Ctx) {
   }
 
   const { data: req, error: rErr } = await supabase
-    .from("content_requests")
+    .from("content_posts")
     .select("*")
     .eq("id", id)
     .maybeSingle();
@@ -67,7 +67,7 @@ export async function PATCH(_request: Request, ctx: Ctx) {
   }
 
   const { data: updated, error: upErr } = await supabase
-    .from("content_requests")
+    .from("content_posts")
     .update({ status: "approved" })
     .eq("id", id)
     .select("*")

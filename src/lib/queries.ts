@@ -11,18 +11,18 @@ import type {
 export async function getDashboardStats() {
   const s = createServiceClient();
   const total = await s
-    .from("content_requests")
+    .from("content_posts")
     .select("*", { count: "exact", head: true });
   const draftsPending = await s
-    .from("content_requests")
+    .from("content_posts")
     .select("*", { count: "exact", head: true })
     .in("status", ["draft", "generated"]);
   const approved = await s
-    .from("content_requests")
+    .from("content_posts")
     .select("*", { count: "exact", head: true })
     .eq("status", "approved");
   const scheduled = await s
-    .from("content_requests")
+    .from("content_posts")
     .select("*", { count: "exact", head: true })
     .eq("status", "queued");
 
@@ -40,7 +40,7 @@ export async function getDashboardStats() {
 
 export async function listRecentRequests(limit = 10): Promise<ContentRequest[]> {
   const { data, error } = await createServiceClient()
-    .from("content_requests")
+    .from("content_posts")
     .select("*")
     .order("updated_at", { ascending: false })
     .limit(limit);
@@ -51,7 +51,7 @@ export async function listRecentRequests(limit = 10): Promise<ContentRequest[]> 
 
 export async function listIdeasDraft(): Promise<ContentRequest[]> {
   const { data, error } = await createServiceClient()
-    .from("content_requests")
+    .from("content_posts")
     .select("*")
     .eq("status", "draft")
     .order("created_at", { ascending: false });
@@ -62,7 +62,7 @@ export async function listIdeasDraft(): Promise<ContentRequest[]> {
 
 export async function listDraftsPipeline(): Promise<ContentRequest[]> {
   const { data, error } = await createServiceClient()
-    .from("content_requests")
+    .from("content_posts")
     .select("*")
     .in("status", ["generated", "reviewed"])
     .order("updated_at", { ascending: false });
@@ -73,7 +73,7 @@ export async function listDraftsPipeline(): Promise<ContentRequest[]> {
 
 export async function listApproved(): Promise<ContentRequest[]> {
   const { data, error } = await createServiceClient()
-    .from("content_requests")
+    .from("content_posts")
     .select("*")
     .eq("status", "approved")
     .order("updated_at", { ascending: false });
@@ -104,7 +104,7 @@ export async function mapActiveGeneratedForRequests(
 
 export async function getRequest(id: string): Promise<ContentRequest | null> {
   const { data, error } = await createServiceClient()
-    .from("content_requests")
+    .from("content_posts")
     .select("*")
     .eq("id", id)
     .maybeSingle();
@@ -203,7 +203,7 @@ export async function listPublishLogs(filters: {
 }): Promise<PublishLog[]> {
   let q = createServiceClient()
     .from("publish_logs")
-    .select("*, content_requests(topic)")
+    .select("*, content_posts(topic)")
     .order("created_at", { ascending: false })
     .limit(200);
 
@@ -214,7 +214,7 @@ export async function listPublishLogs(filters: {
   if (error) throw new Error(error.message);
 
   return (data ?? []).map((row: Record<string, unknown>) => {
-    const cr = row.content_requests as { topic?: string } | null;
+    const cr = row.content_posts as { topic?: string } | null;
     return {
       id: String(row.id),
       content_request_id: String(row.content_request_id),

@@ -12,7 +12,7 @@ export default function NewIdeaPage() {
       </Link>
       <h1 className="mt-6 font-serif text-3xl text-text">New idea</h1>
       <p className="mt-2 text-sm text-muted">
-        Audience and goal must match your database enum values.
+        Use the content type and audience labels you want tracked internally.
       </p>
       <NewIdeaForm />
     </div>

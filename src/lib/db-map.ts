@@ -12,7 +12,7 @@ export function mapRequest(r: Record<string, unknown>): ContentRequest {
     topic: String(r.topic ?? ""),
     notes: r.notes != null ? String(r.notes) : null,
     audience: String(r.audience ?? ""),
-    goal: String(r.goal ?? ""),
+    content_type: String(r.content_type ?? ""),
     status: r.status as ContentRequest["status"],
     created_at: String(r.created_at ?? ""),
     updated_at: String(r.updated_at ?? ""),

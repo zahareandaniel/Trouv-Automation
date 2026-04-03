@@ -40,7 +40,7 @@ export async function POST(request: Request) {
   }
 
   const { data: reqRow, error: re } = await supabase
-    .from("content_requests")
+    .from("content_posts")
     .select("*")
     .eq("id", contentRequestId)
     .maybeSingle();
@@ -108,7 +108,7 @@ export async function POST(request: Request) {
         : "queued";
 
     const { data: upd, error: upErr } = await supabase
-      .from("content_requests")
+      .from("content_posts")
       .update({ status: nextStatus })
       .eq("id", contentRequestId)
       .select("*")
@@ -130,7 +130,7 @@ export async function POST(request: Request) {
 
   if (currentStatus !== "queued" && currentStatus !== "published") {
     await supabase
-      .from("content_requests")
+      .from("content_posts")
       .update({ status: "failed" })
       .eq("id", contentRequestId);
   }

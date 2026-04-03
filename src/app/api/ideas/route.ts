@@ -34,15 +34,15 @@ export async function POST(request: Request) {
     );
   }
 
-  const { topic, notes, audience, goal, platforms } = parsed.data;
+  const { topic, notes, audience, content_type, platforms } = parsed.data;
 
   const { data: req, error } = await supabase
-    .from("content_requests")
+    .from("content_posts")
     .insert({
       topic,
       notes: notes ?? null,
       audience,
-      goal,
+      content_type,
       status: "draft",
     })
     .select("*")
@@ -66,7 +66,7 @@ export async function POST(request: Request) {
     .insert(platformRows);
 
   if (pErr) {
-    await supabase.from("content_requests").delete().eq("id", id);
+    await supabase.from("content_posts").delete().eq("id", id);
     return NextResponse.json({ error: pErr.message }, { status: 500 });
   }
 

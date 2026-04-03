@@ -40,7 +40,7 @@ export async function PATCH(request: Request, ctx: Ctx) {
   }
 
   const { data: row, error: fe } = await supabase
-    .from("content_requests")
+    .from("content_posts")
     .select("*")
     .eq("id", id)
     .maybeSingle();
@@ -59,11 +59,12 @@ export async function PATCH(request: Request, ctx: Ctx) {
   if (parsed.data.topic !== undefined) patch.topic = parsed.data.topic;
   if (parsed.data.notes !== undefined) patch.notes = parsed.data.notes;
   if (parsed.data.audience !== undefined) patch.audience = parsed.data.audience;
-  if (parsed.data.goal !== undefined) patch.goal = parsed.data.goal;
+  if (parsed.data.content_type !== undefined)
+    patch.content_type = parsed.data.content_type;
 
   if (Object.keys(patch).length > 0) {
     const { error: u1 } = await supabase
-      .from("content_requests")
+      .from("content_posts")
       .update(patch)
       .eq("id", id);
     if (u1) return NextResponse.json({ error: u1.message }, { status: 500 });
@@ -87,7 +88,7 @@ export async function PATCH(request: Request, ctx: Ctx) {
   }
 
   const { data: fresh, error: f2 } = await supabase
-    .from("content_requests")
+    .from("content_posts")
     .select("*")
     .eq("id", id)
     .single();
@@ -122,7 +123,7 @@ export async function DELETE(_request: Request, ctx: Ctx) {
   }
 
   const { data: row, error: fe } = await supabase
-    .from("content_requests")
+    .from("content_posts")
     .select("status")
     .eq("id", id)
     .maybeSingle();
@@ -136,7 +137,7 @@ export async function DELETE(_request: Request, ctx: Ctx) {
     );
   }
 
-  const { error } = await supabase.from("content_requests").delete().eq("id", id);
+  const { error } = await supabase.from("content_posts").delete().eq("id", id);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
   return NextResponse.json({ ok: true });

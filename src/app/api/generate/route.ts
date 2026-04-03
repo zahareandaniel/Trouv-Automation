@@ -40,7 +40,7 @@ export async function POST(request: Request) {
   }
 
   const { data: reqRow, error: re } = await supabase
-    .from("content_requests")
+    .from("content_posts")
     .select("*")
     .eq("id", contentRequestId)
     .maybeSingle();
@@ -81,7 +81,7 @@ export async function POST(request: Request) {
       topic: String(req.topic),
       notes: req.notes != null ? String(req.notes) : null,
       audience: String(req.audience),
-      goal: String(req.goal),
+      content_type: String(req.content_type),
       platforms,
       settings,
     });
@@ -128,7 +128,7 @@ export async function POST(request: Request) {
   }
 
   const { data: updReq, error: upErr } = await supabase
-    .from("content_requests")
+    .from("content_posts")
     .update({ status: "generated" })
     .eq("id", contentRequestId)
     .select("*")

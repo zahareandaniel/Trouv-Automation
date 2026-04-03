@@ -23,7 +23,7 @@ export default async function DraftsPage() {
             <tr className="border-b border-border font-mono text-[10px] uppercase tracking-wider text-muted">
               <th className="px-4 py-2">Topic</th>
               <th className="px-4 py-2">Audience</th>
-              <th className="px-4 py-2">Goal</th>
+              <th className="px-4 py-2">Content type</th>
               <th className="px-4 py-2">Status</th>
               <th className="px-4 py-2">Updated</th>
               <th className="px-4 py-2">View</th>
@@ -41,7 +41,7 @@ export default async function DraftsPage() {
                 <tr key={r.id} className="border-b border-border/80">
                   <td className="px-4 py-3 text-text">{r.topic}</td>
                   <td className="px-4 py-3 text-muted">{r.audience}</td>
-                  <td className="px-4 py-3 text-muted">{r.goal}</td>
+                  <td className="px-4 py-3 text-muted">{r.content_type}</td>
                   <td className="px-4 py-3">
                     <StatusBadge status={r.status} />
                   </td>

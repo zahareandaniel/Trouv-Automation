@@ -18,7 +18,7 @@ export async function generateSocialCopy(input: {
   topic: string;
   notes: string | null;
   audience: string;
-  goal: string;
+  content_type: string;
   platforms: TargetPlatform[];
   settings: AppSettings | null;
 }): Promise<{ output: GenerationOutput; model: string }> {
@@ -54,7 +54,7 @@ hashtags (array of strings, no leading #)`;
     topic: input.topic,
     notes: input.notes,
     audience: input.audience,
-    goal: input.goal,
+    content_type: input.content_type,
     brand_name: brandName,
     brand_tone: brandTone,
   });
@@ -93,7 +93,7 @@ export async function reviewGeneratedCopy(input: {
   topic: string;
   notes: string | null;
   audience: string;
-  goal: string;
+  content_type: string;
   generated: GenerationOutput;
   settings: AppSettings | null;
 }): Promise<{ output: ReviewOutput; model: string }> {
@@ -135,7 +135,7 @@ Return JSON only:
       topic: input.topic,
       notes: input.notes,
       audience: input.audience,
-      goal: input.goal,
+      content_type: input.content_type,
     },
     draft: input.generated,
   });

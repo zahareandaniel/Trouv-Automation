@@ -6,14 +6,12 @@ Private editorial workflow for **Trouv Chauffeurs**: ideas → platforms → Ope
 
 Use **only** these tables (already created in your project):
 
-- `public.content_requests`
-- `public.content_request_platforms`
+- `public.content_posts` — briefs / pipeline rows (`content_type`, not `goal`)
+- `public.content_request_platforms` — target platforms per post (FK to post id)
 - `public.generated_contents`
 - `public.content_reviews`
 - `public.publish_logs`
 - `public.app_settings`
-
-This app does **not** use `content_posts` or other legacy tables.
 
 ## Setup
 
@@ -96,7 +94,7 @@ src/
 | Path | Notes |
 |------|--------|
 | `/login` | Public |
-| `/dashboard` | Stats + recent `content_requests` |
+| `/dashboard` | Stats + recent `content_posts` |
 | `/ideas` | `status = draft` |
 | `/ideas/new` | Create idea + platforms |
 | `/ideas/[id]` | Edit/delete/generate while draft |
@@ -111,7 +109,7 @@ src/
 
 - `POST /api/auth/login` — JSON `{ email, password }`
 - `POST /api/auth/logout`
-- `POST /api/ideas` — create request + platforms
+- `POST /api/ideas` — create `content_posts` row + platforms (`content_type` in body)
 - `PATCH /api/ideas/[id]` — edit while `draft` (replace platforms)
 - `DELETE /api/ideas/[id]` — delete while `draft`
 - `POST /api/generate` — `{ contentRequestId }` → new `generated_contents`, `status = generated`
