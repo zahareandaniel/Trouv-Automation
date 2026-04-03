@@ -1,0 +1,74 @@
+import { z } from "zod";
+
+export const targetPlatformSchema = z.enum(["linkedin", "instagram", "x"]);
+
+export const loginBodySchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(1),
+});
+
+export const createIdeaBodySchema = z.object({
+  topic: z.string().min(1, "Topic is required"),
+  notes: z.string().nullable().optional(),
+  audience: z.string().min(1, "Audience is required"),
+  goal: z.string().min(1, "Goal is required"),
+  platforms: z.array(targetPlatformSchema).min(1, "Select at least one platform"),
+});
+
+export const updateIdeaBodySchema = z.object({
+  topic: z.string().min(1).optional(),
+  notes: z.string().nullable().optional(),
+  audience: z.string().min(1).optional(),
+  goal: z.string().min(1).optional(),
+  platforms: z.array(targetPlatformSchema).min(1).optional(),
+});
+
+export const generateBodySchema = z.object({
+  contentRequestId: z.uuid(),
+});
+
+export const reviewBodySchema = z.object({
+  contentRequestId: z.uuid(),
+});
+
+export const bufferPostBodySchema = z.object({
+  platform: targetPlatformSchema,
+  text: z.string().min(1).max(20_000),
+  contentRequestId: z.uuid(),
+});
+
+export const settingsPatchSchema = z.object({
+  brand_name: z.string().min(1).optional(),
+  brand_tone: z.string().nullable().optional(),
+  review_strictness: z.number().int().min(0).max(100).optional(),
+});
+
+export const generationOutputSchema = z.object({
+  linkedin_hook: z.string(),
+  linkedin_post: z.string(),
+  linkedin_cta: z.string(),
+  instagram_hook: z.string(),
+  instagram_caption: z.string(),
+  instagram_cta: z.string(),
+  x_hook: z.string(),
+  x_post: z.string(),
+  x_cta: z.string(),
+  hashtags: z.array(z.string()),
+});
+
+export const reviewOutputSchema = z.object({
+  overall_score: z.number(),
+  brand_alignment_score: z.number(),
+  clarity_score: z.number(),
+  quality_verdict: z.enum(["approve", "revise", "reject"]),
+  problems_found: z.array(z.string()),
+  specific_fixes: z.array(z.string()),
+  revised_suggestions: z.object({
+    linkedin: z.string(),
+    instagram: z.string(),
+    x: z.string(),
+  }),
+});
+
+export type GenerationOutput = z.infer<typeof generationOutputSchema>;
+export type ReviewOutput = z.infer<typeof reviewOutputSchema>;
