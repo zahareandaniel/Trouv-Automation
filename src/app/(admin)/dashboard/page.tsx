@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { StatusBadge } from "@/components/status-badge";
 import { getDashboardStats, listRecentRequests } from "@/lib/queries";
+import { hintForFetchFailure } from "@/lib/supabase/validate-url";
 
 function fmt(iso: string) {
   return new Date(iso).toLocaleString("en-GB", {
@@ -21,7 +22,8 @@ export default async function DashboardPage() {
       listRecentRequests(10),
     ]);
   } catch (e) {
-    loadError = e instanceof Error ? e.message : "Failed to load dashboard data";
+    const raw = e instanceof Error ? e.message : "Failed to load dashboard data";
+    loadError = hintForFetchFailure(raw);
     stats = {
       totalIdeas: 0,
       draftsPending: 0,

@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
+import { assertLikelySupabaseUrl } from "@/lib/supabase/validate-url";
 
 export function createServiceClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
@@ -8,6 +9,7 @@ export function createServiceClient() {
       "Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY",
     );
   }
+  assertLikelySupabaseUrl(url);
   return createClient(url, key, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
