@@ -47,7 +47,7 @@ Secrets never go to the client.
 
 In the project **Settings → Environment Variables**, add **every** variable from `.env.example` for Production (and Preview if you use it). If `ADMIN_JWT_SECRET` or `SUPABASE_SERVICE_ROLE_KEY` is missing, API routes and signed-in pages will fail after login.
 
-Opening `/` or `/login` without a session cookie no longer requires `ADMIN_JWT_SECRET` in middleware (so the login page can load); signing in still requires a valid `ADMIN_JWT_SECRET` (≥16 characters).
+Opening `/` or `/login` without a session cookie no longer requires `ADMIN_JWT_SECRET` in `proxy.ts` (so the login page can load); signing in still requires a valid `ADMIN_JWT_SECRET` (≥16 characters).
 
 ## Final folder structure
 
@@ -88,7 +88,7 @@ src/
 │   ├── settings.ts
 │   ├── request-helpers.ts
 │   └── supabase/server.ts, client.ts
-└── middleware.ts
+└── proxy.ts
 ```
 
 ## Routes
@@ -123,7 +123,7 @@ src/
 
 ## Fully working
 
-- JWT session cookie `trouv_session` (24h), middleware protection
+- JWT session cookie `trouv_session` (24h), `proxy.ts` protection
 - Ideas CRUD + platform rows
 - OpenAI generation → `generated_contents` (previous rows deactivated)
 - OpenAI review → `content_reviews`
