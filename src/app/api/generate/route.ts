@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSessionEmail } from "@/lib/auth";
-import { mapGenerated, mapRequest } from "@/lib/db-map";
+import { mapRequest } from "@/lib/db-map";
 import { generateSocialCopy } from "@/lib/openai";
 import { targetPlatformsFromDb } from "@/lib/platforms";
 import { ensureAppSettings } from "@/lib/settings";
@@ -93,13 +93,7 @@ export async function POST(request: Request) {
 
   const { output, model } = gen;
 
-  await supabase
-    .from("generated_contents")
-    .update({ is_active: false })
-    .eq("content_request_id", contentRequestId);
-
-  const insertPayload = {
-    content_request_id: contentRequestId,
+  const updatePayload: Record<string, unknown> = {
     linkedin_hook: output.linkedin_hook,
     linkedin_post: output.linkedin_post,
     linkedin_cta: output.linkedin_cta,
@@ -110,25 +104,13 @@ export async function POST(request: Request) {
     x_post: output.x_post,
     x_cta: output.x_cta,
     hashtags: output.hashtags,
-    internal_notes: null,
-    raw_response: output as unknown as Record<string, unknown>,
     created_by_model: model,
-    is_active: true,
+    status: "generated",
   };
-
-  const { data: ins, error: insErr } = await supabase
-    .from("generated_contents")
-    .insert(insertPayload)
-    .select("*")
-    .single();
-
-  if (insErr) {
-    return NextResponse.json({ error: insErr.message }, { status: 500 });
-  }
 
   const { data: updReq, error: upErr } = await supabase
     .from("content_posts")
-    .update({ status: "generated" })
+    .update(updatePayload)
     .eq("id", contentRequestId)
     .select("*")
     .single();
@@ -138,7 +120,6 @@ export async function POST(request: Request) {
   }
 
   return NextResponse.json({
-    generated: mapGenerated(ins as Record<string, unknown>),
     request: mapRequest(updReq as Record<string, unknown>),
   });
 }

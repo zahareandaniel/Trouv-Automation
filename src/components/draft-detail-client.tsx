@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
 import { StatusBadge } from "@/components/status-badge";
-import type { ContentRequest, ContentReview, GeneratedContent } from "@/lib/types";
+import type { ContentRequest, ContentReview } from "@/lib/types";
 
 function Col({
   title,
@@ -35,11 +35,9 @@ function Col({
 
 export function DraftDetailClient({
   request,
-  generated,
   latestReview,
 }: {
   request: ContentRequest;
-  generated: GeneratedContent;
   latestReview: ContentReview | null;
 }) {
   const router = useRouter();
@@ -107,8 +105,8 @@ export function DraftDetailClient({
     }
   }
 
-  const tags = generated.hashtags?.length
-    ? generated.hashtags.map((t) => `#${t.replace(/^#/, "")}`).join(" ")
+  const tags = request.hashtags?.length
+    ? request.hashtags.map((t) => `#${t.replace(/^#/, "")}`).join(" ")
     : "—";
 
   return (
@@ -128,21 +126,21 @@ export function DraftDetailClient({
       <div className="grid gap-4 lg:grid-cols-3">
         <Col
           title="LinkedIn"
-          hook={generated.linkedin_hook ?? ""}
-          body={generated.linkedin_post ?? ""}
-          cta={generated.linkedin_cta ?? ""}
+          hook={request.linkedin_hook ?? ""}
+          body={request.linkedin_post ?? ""}
+          cta={request.linkedin_cta ?? ""}
         />
         <Col
           title="Instagram"
-          hook={generated.instagram_hook ?? ""}
-          body={generated.instagram_caption ?? ""}
-          cta={generated.instagram_cta ?? ""}
+          hook={request.instagram_hook ?? ""}
+          body={request.instagram_caption ?? ""}
+          cta={request.instagram_cta ?? ""}
         />
         <Col
           title="X"
-          hook={generated.x_hook ?? ""}
-          body={generated.x_post ?? ""}
-          cta={generated.x_cta ?? ""}
+          hook={request.x_hook ?? ""}
+          body={request.x_post ?? ""}
+          cta={request.x_cta ?? ""}
         />
       </div>
 

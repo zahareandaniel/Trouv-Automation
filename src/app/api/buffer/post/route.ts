@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { getSessionEmail } from "@/lib/auth";
 import { queueBufferPost } from "@/lib/buffer";
-import { mapGenerated, mapRequest } from "@/lib/db-map";
+import { mapRequest } from "@/lib/db-map";
+import { postHasGeneratedCopy } from "@/lib/post-copy";
 import { envChannelId } from "@/lib/request-helpers";
 import { createServiceClient } from "@/lib/supabase/server";
 import type { TargetPlatform } from "@/lib/types";
@@ -55,29 +56,21 @@ export async function POST(request: Request) {
     );
   }
 
-  const { data: genRow, error: ge } = await supabase
-    .from("generated_contents")
-    .select("*")
-    .eq("content_request_id", contentRequestId)
-    .eq("is_active", true)
-    .maybeSingle();
-
-  if (ge) return NextResponse.json({ error: ge.message }, { status: 500 });
-  if (!genRow) {
+  const mapped = mapRequest(reqRow as Record<string, unknown>);
+  if (!postHasGeneratedCopy(mapped)) {
     return NextResponse.json(
-      { error: "No active generated content" },
+      { error: "No generated copy on this post" },
       { status: 400 },
     );
   }
 
-  const generated = mapGenerated(genRow as Record<string, unknown>);
   const channelId = envChannelId(platform as TargetPlatform);
 
   const result = await queueBufferPost(platform as TargetPlatform, text);
 
-  const logBase = {
+  const logBase: Record<string, unknown> = {
     content_request_id: contentRequestId,
-    generated_content_id: generated.id,
+    generated_content_id: null,
     platform,
     provider: "buffer",
     provider_post_id: result.postId,

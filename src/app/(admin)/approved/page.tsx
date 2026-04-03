@@ -1,8 +1,8 @@
 import {
   getSuccessfulPublishKeys,
   listApproved,
-  mapActiveGeneratedForRequests,
 } from "@/lib/queries";
+import { postHasGeneratedCopy } from "@/lib/post-copy";
 import { targetPlatformsFromStrings } from "@/lib/platforms";
 import { PlatformQueueButton } from "@/components/approved-queue-buttons";
 import type { TargetPlatform } from "@/lib/types";
@@ -10,10 +10,7 @@ import type { TargetPlatform } from "@/lib/types";
 export default async function ApprovedPage() {
   const rows = await listApproved();
   const ids = rows.map((r) => r.id);
-  const [genMap, queued] = await Promise.all([
-    mapActiveGeneratedForRequests(ids),
-    getSuccessfulPublishKeys(ids),
-  ]);
+  const queued = await getSuccessfulPublishKeys(ids);
 
   return (
     <div>
@@ -27,14 +24,14 @@ export default async function ApprovedPage() {
           <p className="text-muted">No approved requests.</p>
         ) : (
           rows.map((r) => {
-            const g = genMap.get(r.id);
             const plats = targetPlatformsFromStrings(r.platforms);
+            const hasCopy = postHasGeneratedCopy(r);
             return (
               <div key={r.id} className="border border-border bg-surface p-5">
                 <h2 className="font-serif text-xl text-text">{r.topic}</h2>
-                {!g ? (
+                {!hasCopy ? (
                   <p className="mt-2 text-sm text-danger">
-                    Missing active generated content
+                    No generated copy on this post
                   </p>
                 ) : (
                   <div className="mt-4 flex flex-wrap gap-2">
@@ -46,7 +43,7 @@ export default async function ApprovedPage() {
                           key={p}
                           contentRequestId={r.id}
                           platform={p as TargetPlatform}
-                          generated={g}
+                          post={r}
                           disabled={done}
                         />
                       );

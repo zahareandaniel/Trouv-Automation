@@ -1,11 +1,8 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { DraftDetailClient } from "@/components/draft-detail-client";
-import {
-  getActiveGenerated,
-  getLatestReview,
-  getRequest,
-} from "@/lib/queries";
+import { getLatestReview, getRequest } from "@/lib/queries";
+import { postHasGeneratedCopy } from "@/lib/post-copy";
 
 export default async function DraftDetailPage({
   params,
@@ -44,11 +41,10 @@ export default async function DraftDetailPage({
     );
   }
 
-  const generated = await getActiveGenerated(id);
-  if (!generated) {
+  if (!postHasGeneratedCopy(request)) {
     return (
       <div>
-        <p className="text-muted">No active generated content.</p>
+        <p className="text-muted">No generated copy on this post yet.</p>
         <Link href={`/ideas/${id}`} className="mt-4 inline-block text-accent">
           Back to idea
         </Link>
@@ -67,11 +63,7 @@ export default async function DraftDetailPage({
         ← Drafts
       </Link>
       <h1 className="mt-6 font-serif text-3xl text-text">{request.topic}</h1>
-      <DraftDetailClient
-        request={request}
-        generated={generated}
-        latestReview={latestReview}
-      />
+      <DraftDetailClient request={request} latestReview={latestReview} />
     </div>
   );
 }

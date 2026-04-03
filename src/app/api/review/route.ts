@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { getSessionEmail } from "@/lib/auth";
-import { mapGenerated, mapRequest, mapReview } from "@/lib/db-map";
-import { generatedRowToOutput } from "@/lib/generated-to-output";
+import { mapRequest, mapReview } from "@/lib/db-map";
+import { postCopyToGenerationOutput } from "@/lib/generated-to-output";
+import { postHasGeneratedCopy } from "@/lib/post-copy";
 import { reviewGeneratedCopy } from "@/lib/openai";
 import { ensureAppSettings } from "@/lib/settings";
 import { createServiceClient } from "@/lib/supabase/server";
@@ -27,7 +28,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const contentRequestId = parsed.data.contentRequestId;
+  const postId = parsed.data.contentRequestId;
 
   let supabase;
   try {
@@ -42,7 +43,7 @@ export async function POST(request: Request) {
   const { data: reqRow, error: re } = await supabase
     .from("content_posts")
     .select("*")
-    .eq("id", contentRequestId)
+    .eq("id", postId)
     .maybeSingle();
 
   if (re) return NextResponse.json({ error: re.message }, { status: 500 });
@@ -57,23 +58,15 @@ export async function POST(request: Request) {
     );
   }
 
-  const { data: genRow, error: ge } = await supabase
-    .from("generated_contents")
-    .select("*")
-    .eq("content_request_id", contentRequestId)
-    .eq("is_active", true)
-    .maybeSingle();
-
-  if (ge) return NextResponse.json({ error: ge.message }, { status: 500 });
-  if (!genRow) {
+  const mappedPost = mapRequest(reqRow as Record<string, unknown>);
+  if (!postHasGeneratedCopy(mappedPost)) {
     return NextResponse.json(
-      { error: "No active generated content for this request" },
+      { error: "No generated copy on this post — run Generate first" },
       { status: 400 },
     );
   }
 
-  const generated = mapGenerated(genRow as Record<string, unknown>);
-  const draftOutput = generatedRowToOutput(generated);
+  const draftOutput = postCopyToGenerationOutput(mappedPost);
 
   let settings;
   try {
@@ -103,9 +96,9 @@ export async function POST(request: Request) {
 
   const { output, model } = rev;
 
-  const reviewInsert = {
-    content_request_id: contentRequestId,
-    generated_content_id: generated.id,
+  const reviewInsert: Record<string, unknown> = {
+    content_request_id: postId,
+    generated_content_id: null,
     overall_score: output.overall_score,
     brand_alignment_score: output.brand_alignment_score,
     clarity_score: output.clarity_score,
@@ -130,7 +123,7 @@ export async function POST(request: Request) {
   const { data: updReq, error: upErr } = await supabase
     .from("content_posts")
     .update({ status: "reviewed" })
-    .eq("id", contentRequestId)
+    .eq("id", postId)
     .select("*")
     .single();
 
@@ -141,6 +134,5 @@ export async function POST(request: Request) {
   return NextResponse.json({
     review: mapReview(revIns as Record<string, unknown>),
     request: mapRequest(updReq as Record<string, unknown>),
-    generated,
   });
 }

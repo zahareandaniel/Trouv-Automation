@@ -15,6 +15,7 @@ export type TargetPlatform = "linkedin" | "instagram" | "x";
 /** Mirrors review_verdict enum */
 export type ReviewVerdict = "approve" | "revise" | "reject";
 
+/** `content_posts` row — brief + generated copy on the same row. */
 export interface ContentRequest {
   id: string;
   topic: string;
@@ -25,11 +26,7 @@ export interface ContentRequest {
   status: ContentStatus;
   created_at: string;
   updated_at: string;
-}
 
-export interface GeneratedContent {
-  id: string;
-  content_request_id: string;
   linkedin_hook: string | null;
   linkedin_post: string | null;
   linkedin_cta: string | null;
@@ -40,17 +37,18 @@ export interface GeneratedContent {
   x_post: string | null;
   x_cta: string | null;
   hashtags: string[] | null;
-  internal_notes: string | null;
-  raw_response: Record<string, unknown> | null;
+  /** Model id used for last generation (if column present). */
   created_by_model: string | null;
-  is_active: boolean;
-  created_at: string;
-  updated_at: string;
+
+  linkedin_image_url: string | null;
+  instagram_image_url: string | null;
+  x_image_url: string | null;
 }
 
 export interface ContentReview {
   id: string;
-  content_request_id: string;
+  /** Parent post id (`content_reviews.content_request_id` in DB when unchanged). */
+  post_id: string;
   generated_content_id: string | null;
   overall_score: string | number | null;
   brand_alignment_score: string | number | null;
@@ -67,7 +65,8 @@ export interface ContentReview {
 
 export interface PublishLog {
   id: string;
-  content_request_id: string;
+  /** Parent post id (`publish_logs.content_request_id` in DB when unchanged). */
+  post_id: string;
   generated_content_id: string | null;
   platform: TargetPlatform | string;
   provider: string;

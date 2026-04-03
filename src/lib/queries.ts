@@ -1,11 +1,6 @@
-import { mapGenerated, mapRequest, mapReview, mapSettings } from "@/lib/db-map";
+import { mapRequest, mapReview, mapSettings } from "@/lib/db-map";
 import { createServiceClient } from "@/lib/supabase/server";
-import type {
-  ContentRequest,
-  ContentReview,
-  GeneratedContent,
-  PublishLog,
-} from "@/lib/types";
+import type { ContentRequest, ContentReview, PublishLog } from "@/lib/types";
 
 export async function getDashboardStats() {
   const s = createServiceClient();
@@ -81,26 +76,6 @@ export async function listApproved(): Promise<ContentRequest[]> {
   return (data ?? []).map((r) => mapRequest(r as Record<string, unknown>));
 }
 
-/** Active generated row per request id (batch). */
-export async function mapActiveGeneratedForRequests(
-  requestIds: string[],
-): Promise<Map<string, GeneratedContent>> {
-  const m = new Map<string, GeneratedContent>();
-  if (!requestIds.length) return m;
-  const { data, error } = await createServiceClient()
-    .from("generated_contents")
-    .select("*")
-    .in("content_request_id", requestIds)
-    .eq("is_active", true);
-
-  if (error) throw new Error(error.message);
-  for (const row of data ?? []) {
-    const r = row as Record<string, unknown>;
-    m.set(String(r.content_request_id), mapGenerated(r));
-  }
-  return m;
-}
-
 export async function getRequest(id: string): Promise<ContentRequest | null> {
   const { data, error } = await createServiceClient()
     .from("content_posts")
@@ -111,21 +86,6 @@ export async function getRequest(id: string): Promise<ContentRequest | null> {
   if (error) throw new Error(error.message);
   if (!data) return null;
   return mapRequest(data as Record<string, unknown>);
-}
-
-export async function getActiveGenerated(
-  contentRequestId: string,
-): Promise<GeneratedContent | null> {
-  const { data, error } = await createServiceClient()
-    .from("generated_contents")
-    .select("*")
-    .eq("content_request_id", contentRequestId)
-    .eq("is_active", true)
-    .maybeSingle();
-
-  if (error) throw new Error(error.message);
-  if (!data) return null;
-  return mapGenerated(data as Record<string, unknown>);
 }
 
 export async function getLatestReview(
@@ -144,16 +104,16 @@ export async function getLatestReview(
   return mapReview(row as Record<string, unknown>);
 }
 
-/** Keys `requestId:platform` that already have a successful Buffer queue log */
+/** Keys `postId:platform` that already have a successful Buffer queue log */
 export async function getSuccessfulPublishKeys(
-  requestIds: string[],
+  postIds: string[],
 ): Promise<Set<string>> {
-  if (!requestIds.length) return new Set();
+  if (!postIds.length) return new Set();
   const { data, error } = await createServiceClient()
     .from("publish_logs")
     .select("content_request_id, platform")
     .eq("status", "success")
-    .in("content_request_id", requestIds);
+    .in("content_request_id", postIds);
 
   if (error) throw new Error(error.message);
   const set = new Set<string>();
@@ -181,9 +141,12 @@ export async function listPublishLogs(filters: {
 
   return (data ?? []).map((row: Record<string, unknown>) => {
     const cr = row.content_posts as { topic?: string } | null;
+    const postId = String(
+      row.content_post_id ?? row.content_request_id ?? "",
+    );
     return {
       id: String(row.id),
-      content_request_id: String(row.content_request_id),
+      post_id: postId,
       generated_content_id:
         row.generated_content_id != null ? String(row.generated_content_id) : null,
       platform: String(row.platform),

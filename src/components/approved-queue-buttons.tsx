@@ -3,37 +3,37 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
-import type { GeneratedContent, TargetPlatform } from "@/lib/types";
+import type { ContentRequest, TargetPlatform } from "@/lib/types";
 
-function textForPlatform(g: GeneratedContent, p: TargetPlatform): string {
+function textForPlatform(post: ContentRequest, p: TargetPlatform): string {
   switch (p) {
     case "linkedin":
-      return [g.linkedin_hook, g.linkedin_post, g.linkedin_cta]
+      return [post.linkedin_hook, post.linkedin_post, post.linkedin_cta]
         .filter(Boolean)
         .join("\n\n");
     case "instagram":
-      return [g.instagram_hook, g.instagram_caption, g.instagram_cta]
+      return [post.instagram_hook, post.instagram_caption, post.instagram_cta]
         .filter(Boolean)
         .join("\n\n");
     case "x":
-      return [g.x_hook, g.x_post, g.x_cta].filter(Boolean).join("\n\n");
+      return [post.x_hook, post.x_post, post.x_cta].filter(Boolean).join("\n\n");
   }
 }
 
 export function PlatformQueueButton({
   contentRequestId,
   platform,
-  generated,
+  post,
   disabled,
 }: {
   contentRequestId: string;
   platform: TargetPlatform;
-  generated: GeneratedContent;
+  post: ContentRequest;
   disabled: boolean;
 }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
-  const text = textForPlatform(generated, platform);
+  const text = textForPlatform(post, platform);
   const noCopy = !text.trim();
 
   async function onClick() {

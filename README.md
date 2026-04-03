@@ -6,13 +6,12 @@ Private editorial workflow for **Trouv Chauffeurs**: ideas → platforms → Ope
 
 Use **only** these tables (already created in your project):
 
-- `public.content_posts` — briefs / pipeline rows (`content_type`, `platforms` as `text[]`)
-- `public.generated_contents`
-- `public.content_reviews`
-- `public.publish_logs`
+- `public.content_posts` — briefs, `platforms text[]`, generated copy columns (`linkedin_*`, `instagram_*`, `x_*`, `hashtags`, `created_by_model`, optional `*_image_url`)
+- `public.content_reviews` — still keyed by `content_request_id` (post UUID) unless you rename the FK column; `generated_content_id` should be nullable
+- `public.publish_logs` — same FK naming as above; `generated_content_id` nullable
 - `public.app_settings`
 
-Add `platforms text[]` on `content_posts` in Supabase if it is not already present (no junction table for platforms).
+Add `platforms text[]` and the platform copy columns on `content_posts` if missing. The app does **not** use `generated_contents`.
 
 ## Setup
 
@@ -113,7 +112,7 @@ src/
 - `POST /api/ideas` — create `content_posts` row + platforms (`content_type` in body)
 - `PATCH /api/ideas/[id]` — edit while `draft` (replace platforms)
 - `DELETE /api/ideas/[id]` — delete while `draft`
-- `POST /api/generate` — `{ contentRequestId }` → new `generated_contents`, `status = generated`
+- `POST /api/generate` — `{ contentRequestId }` → OpenAI → updates `content_posts` copy fields, `status = generated`
 - `POST /api/review` — `{ contentRequestId }` → `content_reviews`, `status = reviewed`
 - `PATCH /api/ideas/[id]/approve` — requires `reviewed` + latest verdict `approve`
 - `PATCH /api/ideas/[id]/reject` — back to `generated`
@@ -124,7 +123,7 @@ src/
 
 - JWT session cookie `trouv_session` (24h), `proxy.ts` protection
 - Ideas CRUD (`content_posts.platforms` array)
-- OpenAI generation → `generated_contents` (previous rows deactivated)
+- OpenAI generation → writes copy onto `content_posts`
 - OpenAI review → `content_reviews`
 - Approve / reject lifecycle
 - Buffer queue + `publish_logs` every attempt

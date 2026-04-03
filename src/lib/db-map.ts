@@ -3,8 +3,56 @@ import type {
   AppSettings,
   ContentRequest,
   ContentReview,
-  GeneratedContent,
 } from "@/lib/types";
+
+function strOrNull(v: unknown): string | null {
+  if (v == null) return null;
+  if (typeof v !== "string") return null;
+  const s = v.trim();
+  return s.length ? s : null;
+}
+
+function hashtagsFromRow(v: unknown): string[] | null {
+  if (!Array.isArray(v)) return null;
+  const t = v.filter((x): x is string => typeof x === "string");
+  return t.length ? t : null;
+}
+
+/** Map copy + image fields shared on `content_posts`. */
+export function mapPostCopyFields(r: Record<string, unknown>): Pick<
+  ContentRequest,
+  | "linkedin_hook"
+  | "linkedin_post"
+  | "linkedin_cta"
+  | "instagram_hook"
+  | "instagram_caption"
+  | "instagram_cta"
+  | "x_hook"
+  | "x_post"
+  | "x_cta"
+  | "hashtags"
+  | "created_by_model"
+  | "linkedin_image_url"
+  | "instagram_image_url"
+  | "x_image_url"
+> {
+  return {
+    linkedin_hook: strOrNull(r.linkedin_hook),
+    linkedin_post: strOrNull(r.linkedin_post),
+    linkedin_cta: strOrNull(r.linkedin_cta),
+    instagram_hook: strOrNull(r.instagram_hook),
+    instagram_caption: strOrNull(r.instagram_caption),
+    instagram_cta: strOrNull(r.instagram_cta),
+    x_hook: strOrNull(r.x_hook),
+    x_post: strOrNull(r.x_post),
+    x_cta: strOrNull(r.x_cta),
+    hashtags: hashtagsFromRow(r.hashtags),
+    created_by_model: strOrNull(r.created_by_model),
+    linkedin_image_url: strOrNull(r.linkedin_image_url),
+    instagram_image_url: strOrNull(r.instagram_image_url),
+    x_image_url: strOrNull(r.x_image_url),
+  };
+}
 
 export function mapRequest(r: Record<string, unknown>): ContentRequest {
   return {
@@ -16,44 +64,18 @@ export function mapRequest(r: Record<string, unknown>): ContentRequest {
     status: r.status as ContentRequest["status"],
     created_at: String(r.created_at ?? ""),
     updated_at: String(r.updated_at ?? ""),
-  };
-}
-
-export function mapGenerated(r: Record<string, unknown>): GeneratedContent {
-  const tags = r.hashtags;
-  return {
-    id: String(r.id),
-    content_request_id: String(r.content_request_id ?? ""),
-    linkedin_hook: r.linkedin_hook != null ? String(r.linkedin_hook) : null,
-    linkedin_post: r.linkedin_post != null ? String(r.linkedin_post) : null,
-    linkedin_cta: r.linkedin_cta != null ? String(r.linkedin_cta) : null,
-    instagram_hook: r.instagram_hook != null ? String(r.instagram_hook) : null,
-    instagram_caption:
-      r.instagram_caption != null ? String(r.instagram_caption) : null,
-    instagram_cta: r.instagram_cta != null ? String(r.instagram_cta) : null,
-    x_hook: r.x_hook != null ? String(r.x_hook) : null,
-    x_post: r.x_post != null ? String(r.x_post) : null,
-    x_cta: r.x_cta != null ? String(r.x_cta) : null,
-    hashtags: Array.isArray(tags)
-      ? tags.filter((x): x is string => typeof x === "string")
-      : null,
-    internal_notes: r.internal_notes != null ? String(r.internal_notes) : null,
-    raw_response:
-      r.raw_response && typeof r.raw_response === "object"
-        ? (r.raw_response as Record<string, unknown>)
-        : null,
-    created_by_model:
-      r.created_by_model != null ? String(r.created_by_model) : null,
-    is_active: Boolean(r.is_active),
-    created_at: String(r.created_at ?? ""),
-    updated_at: String(r.updated_at ?? ""),
+    ...mapPostCopyFields(r),
   };
 }
 
 export function mapReview(r: Record<string, unknown>): ContentReview {
+  const postId =
+    r.content_post_id != null
+      ? String(r.content_post_id)
+      : String(r.content_request_id ?? "");
   return {
     id: String(r.id),
-    content_request_id: String(r.content_request_id ?? ""),
+    post_id: postId,
     generated_content_id:
       r.generated_content_id != null ? String(r.generated_content_id) : null,
     overall_score: r.overall_score as string | number | null,
@@ -100,4 +122,3 @@ export function mapSettings(r: Record<string, unknown>): AppSettings {
     updated_at: String(r.updated_at ?? ""),
   };
 }
-
