@@ -1,3 +1,4 @@
+import { parseDbContentPostStatus } from "@/lib/content-posts/status";
 import { platformsFromDb } from "@/lib/platforms";
 import type {
   AppSettings,
@@ -59,7 +60,7 @@ export function mapRequest(r: Record<string, unknown>): ContentRequest {
     audience: String(r.audience ?? ""),
     content_type: String(r.content_type ?? ""),
     platforms: platformsFromDb(r.platforms),
-    status: r.status as ContentRequest["status"],
+    status: parseDbContentPostStatus(r.status),
     created_at: String(r.created_at ?? ""),
     updated_at: String(r.updated_at ?? ""),
     ...mapPostCopyFields(r),

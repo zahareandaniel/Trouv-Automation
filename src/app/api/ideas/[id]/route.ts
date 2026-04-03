@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSessionEmail } from "@/lib/auth";
 import { mapRequest } from "@/lib/db-map";
+import { isContentPostBriefStage } from "@/lib/post-copy";
 import { createServiceClient } from "@/lib/supabase/server";
 import { updateIdeaBodySchema } from "@/lib/validations";
 
@@ -47,9 +48,10 @@ export async function PATCH(request: Request, ctx: Ctx) {
   if (fe) return NextResponse.json({ error: fe.message }, { status: 500 });
   if (!row) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  if ((row as Record<string, unknown>).status !== "draft") {
+  const mapped = mapRequest(row as Record<string, unknown>);
+  if (!isContentPostBriefStage(mapped)) {
     return NextResponse.json(
-      { error: "Only draft ideas can be edited" },
+      { error: "Only brief-stage posts (idea / legacy draft without copy) can be edited" },
       { status: 400 },
     );
   }
@@ -103,15 +105,15 @@ export async function DELETE(_request: Request, ctx: Ctx) {
 
   const { data: row, error: fe } = await supabase
     .from("content_posts")
-    .select("status")
+    .select("*")
     .eq("id", id)
     .maybeSingle();
 
   if (fe) return NextResponse.json({ error: fe.message }, { status: 500 });
   if (!row) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  if ((row as Record<string, unknown>).status !== "draft") {
+  if (!isContentPostBriefStage(mapRequest(row as Record<string, unknown>))) {
     return NextResponse.json(
-      { error: "Only draft ideas can be deleted" },
+      { error: "Only brief-stage posts can be deleted" },
       { status: 400 },
     );
   }

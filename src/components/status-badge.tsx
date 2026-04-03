@@ -1,18 +1,18 @@
-import type { ContentStatus } from "@/lib/types";
+import type { ContentPostStatus } from "@/lib/content-posts/status";
 
-const styles: Partial<Record<ContentStatus, string>> = {
-  draft: "text-muted border-border",
-  generated: "text-accent border-accent/40",
-  reviewed: "text-text border-accent/60",
+const styles: Record<ContentPostStatus, string> = {
+  idea: "text-muted border-border",
+  draft: "text-accent border-accent/40",
   approved: "text-success border-success/40",
-  queued: "text-accent border-accent",
-  published: "text-muted border-border",
+  scheduled: "text-accent border-accent",
+  posted: "text-muted border-border",
   failed: "text-danger border-danger/50",
-  archived: "text-muted border-border opacity-60",
 };
 
+/** Renders DB status; unknown strings still display (e.g. legacy pre-migration). */
 export function StatusBadge({ status }: { status: string }) {
-  const c = styles[status as ContentStatus] ?? "text-muted border-border";
+  const c =
+    styles[status as ContentPostStatus] ?? "text-muted border-border";
   return (
     <span
       className={`inline-block border px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider ${c}`}

@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSessionEmail } from "@/lib/auth";
+import { buildContentPostGenerationPatch } from "@/lib/content-posts/generation-update";
+import { DB_STATUS_GENERATABLE_RAW } from "@/lib/content-posts/db-filters";
 import { mapRequest } from "@/lib/db-map";
 import { generateSocialCopy } from "@/lib/openai";
 import { targetPlatformsFromDb } from "@/lib/platforms";
@@ -49,10 +51,13 @@ export async function POST(request: Request) {
   if (!reqRow) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   const req = reqRow as Record<string, unknown>;
-  const st = req.status as string;
-  if (st !== "draft" && st !== "generated") {
+  const st = String(req.status ?? "");
+  if (!DB_STATUS_GENERATABLE_RAW.has(st)) {
     return NextResponse.json(
-      { error: "Generation allowed only for draft or generated status" },
+      {
+        error:
+          "Generation not allowed for this status (allowed: idea, draft, or legacy generated/reviewed)",
+      },
       { status: 400 },
     );
   }
@@ -92,20 +97,7 @@ export async function POST(request: Request) {
   }
 
   const { output } = gen;
-
-  const updatePayload: Record<string, unknown> = {
-    linkedin_hook: output.linkedin_hook,
-    linkedin_post: output.linkedin_post,
-    linkedin_cta: output.linkedin_cta,
-    instagram_hook: output.instagram_hook,
-    instagram_caption: output.instagram_caption,
-    instagram_cta: output.instagram_cta,
-    x_hook: output.x_hook,
-    x_post: output.x_post,
-    x_cta: output.x_cta,
-    hashtags: output.hashtags,
-    status: "generated",
-  };
+  const updatePayload = buildContentPostGenerationPatch(output);
 
   const { data: updReq, error: upErr } = await supabase
     .from("content_posts")

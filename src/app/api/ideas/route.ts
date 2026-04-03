@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSessionEmail } from "@/lib/auth";
+import { STATUS_IDEA } from "@/lib/content-posts/status";
 import { mapRequest } from "@/lib/db-map";
 import { createServiceClient } from "@/lib/supabase/server";
 import { createIdeaBodySchema } from "@/lib/validations";
@@ -43,7 +44,7 @@ export async function POST(request: Request) {
       audience,
       content_type,
       platforms,
-      status: "draft",
+      status: STATUS_IDEA,
     })
     .select("*")
     .single();

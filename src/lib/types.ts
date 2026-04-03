@@ -1,13 +1,6 @@
-/** Mirrors DB enums on content_posts.status */
-export type ContentStatus =
-  | "draft"
-  | "generated"
-  | "reviewed"
-  | "approved"
-  | "queued"
-  | "published"
-  | "failed"
-  | "archived";
+import type { ContentPostStatus } from "@/lib/content-posts/status";
+
+export type { ContentPostStatus };
 
 /** Mirrors target_platform enum */
 export type TargetPlatform = "linkedin" | "instagram" | "x";
@@ -23,7 +16,7 @@ export interface ContentRequest {
   content_type: string;
   /** Stored as `content_posts.platforms` (text[]). */
   platforms: string[];
-  status: ContentStatus;
+  status: ContentPostStatus;
   created_at: string;
   updated_at: string;
 

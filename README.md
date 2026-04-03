@@ -6,12 +6,25 @@ Private editorial workflow for **Trouv Chauffeurs**: ideas → platforms → Ope
 
 Use **only** these tables (already created in your project):
 
-- `public.content_posts` — briefs, `platforms text[]`, generated copy columns (`linkedin_*`, `instagram_*`, `x_*`, `hashtags`, optional `*_image_url`)
+- `public.content_posts` — `content_post_status` enum: `idea` | `draft` | `approved` | `scheduled` | `posted` | `failed`. Columns: `platforms text[]`, topic/audience/`content_type`, and **at minimum** `linkedin_post`, `instagram_caption`, `x_post` for persisted AI output (see `src/lib/content-posts/generation-update.ts` — expand the allowlist when you add hooks/CTAs/hashtags columns). Optional read fields mapped in `db-map` when present.
 - `public.content_reviews` — still keyed by `content_request_id` (post UUID) unless you rename the FK column; `generated_content_id` should be nullable
 - `public.publish_logs` — same FK naming as above; `generated_content_id` nullable
 - `public.app_settings`
 
-Add `platforms text[]` and the platform copy columns on `content_posts` if missing. The app does **not** use `generated_contents`.
+Add `platforms text[]` and required copy columns on `content_posts` if missing. The app does **not** use `generated_contents`.
+
+### One-time data migration (legacy statuses)
+
+If rows still use old enum values, run in Supabase SQL (adjust to your data):
+
+```sql
+UPDATE public.content_posts SET status = 'draft' WHERE status::text IN ('generated','reviewed');
+UPDATE public.content_posts SET status = 'scheduled' WHERE status::text = 'queued';
+UPDATE public.content_posts SET status = 'posted' WHERE status::text = 'published';
+UPDATE public.content_posts SET status = 'idea' WHERE status::text = 'draft' AND coalesce(trim(linkedin_post), '') = '' AND coalesce(trim(instagram_caption), '') = '' AND coalesce(trim(x_post), '') = '';
+```
+
+After this, brief-only rows are `idea`, copy pipeline rows are `draft`, etc. Queries in `src/lib/content-posts/db-filters.ts` still accept legacy raw values until you clean data.
 
 ## Setup
 
@@ -83,6 +96,7 @@ src/
 │   ├── types.ts
 │   ├── db-map.ts
 │   ├── queries.ts
+│   ├── content-posts/   # status enum, DB filters, generation write allowlist
 │   ├── settings.ts
 │   ├── request-helpers.ts
 │   └── supabase/server.ts, client.ts
@@ -95,10 +109,10 @@ src/
 |------|--------|
 | `/login` | Public |
 | `/dashboard` | Stats + recent `content_posts` |
-| `/ideas` | `status = draft` |
-| `/ideas/new` | Create idea + platforms |
-| `/ideas/[id]` | Edit/delete/generate while draft |
-| `/drafts` | `status ∈ (generated, reviewed)` |
+| `/ideas` | Brief stage: `idea` or legacy `draft` without copy |
+| `/ideas/new` | Create post (`status = idea`) |
+| `/ideas/[id]` | Edit/delete while brief stage only |
+| `/drafts` | `draft` with copy, or legacy `generated`/`reviewed`, or `failed` with copy |
 | `/drafts/[id]` | Copy + review / approve / reject / regenerate |
 | `/approved` | `status = approved` → per-platform Buffer |
 | `/posted` | Placeholder |
@@ -110,13 +124,13 @@ src/
 - `POST /api/auth/login` — JSON `{ email, password }`
 - `POST /api/auth/logout`
 - `POST /api/ideas` — create `content_posts` row + platforms (`content_type` in body)
-- `PATCH /api/ideas/[id]` — edit while `draft` (replace platforms)
-- `DELETE /api/ideas/[id]` — delete while `draft`
-- `POST /api/generate` — `{ contentRequestId }` → OpenAI → updates `content_posts` copy fields, `status = generated`
-- `POST /api/review` — `{ contentRequestId }` → `content_reviews`, `status = reviewed`
-- `PATCH /api/ideas/[id]/approve` — requires `reviewed` + latest verdict `approve`
-- `PATCH /api/ideas/[id]/reject` — back to `generated`
-- `POST /api/buffer/post` — `{ platform, text, contentRequestId }` → `publish_logs`, `status = queued` on success
+- `PATCH /api/ideas/[id]` — edit while brief stage (`idea` / legacy empty `draft`)
+- `DELETE /api/ideas/[id]` — delete while brief stage
+- `POST /api/generate` — OpenAI → updates allowlisted copy columns + `status = draft`
+- `POST /api/review` — `content_reviews` insert; **does not** change post status (stays `draft`)
+- `PATCH /api/ideas/[id]/approve` — `draft` + latest review verdict `approve` → `approved`
+- `PATCH /api/ideas/[id]/reject` — `draft` + at least one review (no status change)
+- `POST /api/buffer/post` — `publish_logs`; success → `scheduled` (from `approved`; idempotent if already `scheduled`/`posted`)
 - `GET` / `PATCH /api/settings`
 
 ## Fully working

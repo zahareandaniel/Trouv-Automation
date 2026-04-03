@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSessionEmail } from "@/lib/auth";
+import { parseDbContentPostStatus } from "@/lib/content-posts/status";
 import { mapRequest } from "@/lib/db-map";
 import { createServiceClient } from "@/lib/supabase/server";
 
@@ -24,31 +25,38 @@ export async function PATCH(_request: Request, ctx: Ctx) {
 
   const { data: req, error: rErr } = await supabase
     .from("content_posts")
-    .select("status")
+    .select("*")
     .eq("id", id)
     .maybeSingle();
 
   if (rErr) return NextResponse.json({ error: rErr.message }, { status: 500 });
   if (!req) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  const status = (req as Record<string, unknown>).status;
-  if (status !== "reviewed") {
+  const normalized = parseDbContentPostStatus(
+    (req as Record<string, unknown>).status,
+  );
+  if (normalized !== "draft") {
     return NextResponse.json(
-      { error: "Reject only applies to reviewed requests" },
+      { error: "Reject only applies to draft-stage posts with copy" },
       { status: 400 },
     );
   }
 
-  const { data: updated, error: upErr } = await supabase
-    .from("content_posts")
-    .update({ status: "generated" })
-    .eq("id", id)
-    .select("*")
-    .single();
+  const { data: reviews, error: revErr } = await supabase
+    .from("content_reviews")
+    .select("id")
+    .eq("content_request_id", id)
+    .limit(1);
 
-  if (upErr) return NextResponse.json({ error: upErr.message }, { status: 500 });
+  if (revErr) return NextResponse.json({ error: revErr.message }, { status: 500 });
+  if (!reviews?.length) {
+    return NextResponse.json(
+      { error: "Run review at least once before rejecting from this flow" },
+      { status: 400 },
+    );
+  }
 
   return NextResponse.json({
-    request: mapRequest(updated as Record<string, unknown>),
+    request: mapRequest(req as Record<string, unknown>),
   });
 }

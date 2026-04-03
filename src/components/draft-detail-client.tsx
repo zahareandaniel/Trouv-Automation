@@ -44,8 +44,13 @@ export function DraftDetailClient({
   const [busy, setBusy] = useState(false);
 
   const verdict = String(latestReview?.quality_verdict ?? "").toLowerCase();
-  const canApprove = request.status === "reviewed" && verdict === "approve";
-  const canReject = request.status === "reviewed";
+  /** Regenerate / run review after a publish failure. */
+  const pipelineEdit =
+    request.status === "draft" || request.status === "failed";
+
+  const canApprove =
+    request.status === "draft" && verdict === "approve" && latestReview != null;
+  const canReject = request.status === "draft" && latestReview != null;
 
   async function post(url: string, method = "POST", json?: object) {
     setBusy(true);
@@ -90,7 +95,7 @@ export function DraftDetailClient({
   async function reject() {
     const ok = await post(`/api/ideas/${request.id}/reject`, "PATCH");
     if (ok) {
-      toast.success("Sent back to generated");
+      toast.success("Rejected — stay on draft to revise or regenerate");
       router.refresh();
     }
   }
@@ -154,7 +159,7 @@ export function DraftDetailClient({
       <div className="flex flex-wrap gap-3">
         <button
           type="button"
-          disabled={busy || !["generated", "reviewed"].includes(request.status)}
+          disabled={busy || !pipelineEdit}
           onClick={() => void runReview()}
           className="border border-border px-4 py-2 font-mono text-xs uppercase tracking-wider text-text hover:border-accent disabled:opacity-40"
         >
@@ -165,7 +170,7 @@ export function DraftDetailClient({
           disabled={busy || !canApprove}
           title={
             !canApprove
-              ? "Requires reviewed status and latest verdict approve"
+              ? "Requires draft, a completed review, and latest verdict approve"
               : undefined
           }
           onClick={() => void approve()}
@@ -183,7 +188,7 @@ export function DraftDetailClient({
         </button>
         <button
           type="button"
-          disabled={busy || !["generated", "reviewed"].includes(request.status)}
+          disabled={busy || !pipelineEdit}
           onClick={() => void regenerate()}
           className="border border-border px-4 py-2 font-mono text-xs uppercase tracking-wider text-muted hover:text-text disabled:opacity-40"
         >

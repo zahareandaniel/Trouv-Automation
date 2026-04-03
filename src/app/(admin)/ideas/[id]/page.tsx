@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { IdeaEditor } from "@/components/idea-forms";
 import { getRequest } from "@/lib/queries";
+import { isContentPostBriefStage } from "@/lib/post-copy";
 
 export default async function IdeaDetailPage({
   params,
@@ -12,7 +13,7 @@ export default async function IdeaDetailPage({
   const request = await getRequest(id);
   if (!request) notFound();
 
-  if (request.status !== "draft") {
+  if (!isContentPostBriefStage(request)) {
     redirect(`/drafts/${id}`);
   }
 

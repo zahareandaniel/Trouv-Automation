@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSessionEmail } from "@/lib/auth";
+import { DB_STATUS_REVIEWABLE_RAW } from "@/lib/content-posts/db-filters";
 import { mapRequest, mapReview } from "@/lib/db-map";
 import { postCopyToGenerationOutput } from "@/lib/generated-to-output";
 import { postHasGeneratedCopy } from "@/lib/post-copy";
@@ -50,10 +51,13 @@ export async function POST(request: Request) {
   if (!reqRow) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   const req = reqRow as Record<string, unknown>;
-  const st = req.status as string;
-  if (st !== "generated" && st !== "reviewed") {
+  const st = String(req.status ?? "");
+  if (!DB_STATUS_REVIEWABLE_RAW.has(st)) {
     return NextResponse.json(
-      { error: "Review requires generated (or re-review reviewed) content" },
+      {
+        error:
+          "Review requires draft-stage content (draft, or legacy generated/reviewed)",
+      },
       { status: 400 },
     );
   }
@@ -120,19 +124,21 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: revErr.message }, { status: 500 });
   }
 
-  const { data: updReq, error: upErr } = await supabase
+  const { data: fresh, error: fErr } = await supabase
     .from("content_posts")
-    .update({ status: "reviewed" })
-    .eq("id", postId)
     .select("*")
+    .eq("id", postId)
     .single();
 
-  if (upErr) {
-    return NextResponse.json({ error: upErr.message }, { status: 500 });
+  if (fErr || !fresh) {
+    return NextResponse.json(
+      { error: fErr?.message ?? "Reload failed" },
+      { status: 500 },
+    );
   }
 
   return NextResponse.json({
     review: mapReview(revIns as Record<string, unknown>),
-    request: mapRequest(updReq as Record<string, unknown>),
+    request: mapRequest(fresh as Record<string, unknown>),
   });
 }

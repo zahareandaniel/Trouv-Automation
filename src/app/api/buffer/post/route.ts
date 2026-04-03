@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSessionEmail } from "@/lib/auth";
+import { DB_STATUS_BUFFER_DONE } from "@/lib/content-posts/db-filters";
+import { STATUS_POSTED, STATUS_SCHEDULED } from "@/lib/content-posts/status";
 import { queueBufferPost } from "@/lib/buffer";
 import { mapRequest } from "@/lib/db-map";
 import { postHasGeneratedCopy } from "@/lib/post-copy";
@@ -7,6 +9,12 @@ import { envChannelId } from "@/lib/request-helpers";
 import { createServiceClient } from "@/lib/supabase/server";
 import type { TargetPlatform } from "@/lib/types";
 import { bufferPostBodySchema } from "@/lib/validations";
+
+function statusAfterBufferSuccess(raw: string): typeof STATUS_SCHEDULED | typeof STATUS_POSTED {
+  if (raw === "posted" || raw === "published") return STATUS_POSTED;
+  if (raw === "scheduled" || raw === "queued") return STATUS_SCHEDULED;
+  return STATUS_SCHEDULED;
+}
 
 export async function POST(request: Request) {
   if (!(await getSessionEmail())) {
@@ -51,7 +59,7 @@ export async function POST(request: Request) {
 
   if ((reqRow as Record<string, unknown>).status !== "approved") {
     return NextResponse.json(
-      { error: "Only approved requests can be queued to Buffer" },
+      { error: "Only approved posts can be queued to Buffer" },
       { status: 403 },
     );
   }
@@ -92,13 +100,10 @@ export async function POST(request: Request) {
     );
   }
 
-  const currentStatus = (reqRow as Record<string, unknown>).status as string;
+  const currentStatus = String((reqRow as Record<string, unknown>).status ?? "");
 
   if (result.success) {
-    const nextStatus =
-      currentStatus === "published" || currentStatus === "queued"
-        ? currentStatus
-        : "queued";
+    const nextStatus = statusAfterBufferSuccess(currentStatus);
 
     const { data: upd, error: upErr } = await supabase
       .from("content_posts")
@@ -109,7 +114,7 @@ export async function POST(request: Request) {
 
     if (upErr) {
       return NextResponse.json(
-        { error: "Buffer ok but failed to update request", details: upErr.message },
+        { error: "Buffer ok but failed to update post", details: upErr.message },
         { status: 500 },
       );
     }
@@ -121,7 +126,7 @@ export async function POST(request: Request) {
     });
   }
 
-  if (currentStatus !== "queued" && currentStatus !== "published") {
+  if (!DB_STATUS_BUFFER_DONE.has(currentStatus)) {
     await supabase
       .from("content_posts")
       .update({ status: "failed" })

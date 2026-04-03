@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSessionEmail } from "@/lib/auth";
+import { parseDbContentPostStatus } from "@/lib/content-posts/status";
 import { mapRequest, mapReview } from "@/lib/db-map";
 import { createServiceClient } from "@/lib/supabase/server";
 
@@ -31,10 +32,12 @@ export async function PATCH(_request: Request, ctx: Ctx) {
   if (rErr) return NextResponse.json({ error: rErr.message }, { status: 500 });
   if (!req) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  const status = (req as Record<string, unknown>).status;
-  if (status !== "reviewed") {
+  const normalized = parseDbContentPostStatus(
+    (req as Record<string, unknown>).status,
+  );
+  if (normalized !== "draft") {
     return NextResponse.json(
-      { error: "Only reviewed requests can be approved" },
+      { error: "Only draft-stage posts (with copy) can be approved" },
       { status: 400 },
     );
   }

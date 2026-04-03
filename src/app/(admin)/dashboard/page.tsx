@@ -99,7 +99,7 @@ export default async function DashboardPage() {
                     <td className="px-4 py-3">
                       <Link
                         href={
-                          r.status === "draft"
+                          r.status === "idea"
                             ? `/ideas/${r.id}`
                             : `/drafts/${r.id}`
                         }

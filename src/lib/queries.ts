@@ -1,4 +1,15 @@
+import {
+  DB_STATUS_APPROVED,
+  DB_STATUS_DASHBOARD_PENDING,
+  DB_STATUS_DRAFT_PIPELINE,
+  DB_STATUS_IDEAS_LIST,
+  DB_STATUS_SCHEDULED,
+} from "@/lib/content-posts/db-filters";
 import { mapRequest, mapReview, mapSettings } from "@/lib/db-map";
+import {
+  isContentPostBriefStage,
+  postHasGeneratedCopy,
+} from "@/lib/post-copy";
 import { createServiceClient } from "@/lib/supabase/server";
 import type { ContentRequest, ContentReview, PublishLog } from "@/lib/types";
 
@@ -10,15 +21,15 @@ export async function getDashboardStats() {
   const draftsPending = await s
     .from("content_posts")
     .select("*", { count: "exact", head: true })
-    .in("status", ["draft", "generated"]);
+    .in("status", [...DB_STATUS_DASHBOARD_PENDING]);
   const approved = await s
     .from("content_posts")
     .select("*", { count: "exact", head: true })
-    .eq("status", "approved");
+    .in("status", [...DB_STATUS_APPROVED]);
   const scheduled = await s
     .from("content_posts")
     .select("*", { count: "exact", head: true })
-    .eq("status", "queued");
+    .in("status", [...DB_STATUS_SCHEDULED]);
 
   const err =
     total.error || draftsPending.error || approved.error || scheduled.error;
@@ -47,22 +58,39 @@ export async function listIdeasDraft(): Promise<ContentRequest[]> {
   const { data, error } = await createServiceClient()
     .from("content_posts")
     .select("*")
-    .eq("status", "draft")
+    .in("status", [...DB_STATUS_IDEAS_LIST])
     .order("created_at", { ascending: false });
 
   if (error) throw new Error(error.message);
-  return (data ?? []).map((r) => mapRequest(r as Record<string, unknown>));
+  return (data ?? [])
+    .map((r) => mapRequest(r as Record<string, unknown>))
+    .filter(isContentPostBriefStage);
 }
 
 export async function listDraftsPipeline(): Promise<ContentRequest[]> {
   const { data, error } = await createServiceClient()
     .from("content_posts")
     .select("*")
-    .in("status", ["generated", "reviewed"])
+    .in("status", [...DB_STATUS_DRAFT_PIPELINE])
     .order("updated_at", { ascending: false });
 
   if (error) throw new Error(error.message);
-  return (data ?? []).map((r) => mapRequest(r as Record<string, unknown>));
+  const out: ContentRequest[] = [];
+  for (const row of data ?? []) {
+    const rec = row as Record<string, unknown>;
+    const raw = String(rec.status ?? "");
+    const m = mapRequest(rec);
+    if (raw === "generated" || raw === "reviewed") {
+      out.push(m);
+      continue;
+    }
+    if (raw === "failed") {
+      if (postHasGeneratedCopy(m)) out.push(m);
+      continue;
+    }
+    if (raw === "draft" && postHasGeneratedCopy(m)) out.push(m);
+  }
+  return out;
 }
 
 export async function listApproved(): Promise<ContentRequest[]> {

@@ -15,3 +15,13 @@ export function postHasGeneratedCopy(p: ContentRequest): boolean {
   ];
   return parts.some((x) => x != null && String(x).trim() !== "");
 }
+
+/**
+ * Editable on `/ideas/[id]`: `idea`, or legacy `draft` rows with no copy yet
+ * (before enum migration, briefs were often `draft`).
+ */
+export function isContentPostBriefStage(p: ContentRequest): boolean {
+  if (p.status === "idea") return true;
+  if (p.status === "draft" && !postHasGeneratedCopy(p)) return true;
+  return false;
+}

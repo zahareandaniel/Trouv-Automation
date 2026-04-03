@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+export { contentPostStatusSchema } from "@/lib/content-posts/status";
+
 export const targetPlatformSchema = z.enum(["linkedin", "instagram", "x"]);
 
 export const loginBodySchema = z.object({

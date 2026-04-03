@@ -2,7 +2,10 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { DraftDetailClient } from "@/components/draft-detail-client";
 import { getLatestReview, getRequest } from "@/lib/queries";
-import { postHasGeneratedCopy } from "@/lib/post-copy";
+import {
+  isContentPostBriefStage,
+  postHasGeneratedCopy,
+} from "@/lib/post-copy";
 
 export default async function DraftDetailPage({
   params,
@@ -13,14 +16,14 @@ export default async function DraftDetailPage({
   const request = await getRequest(id);
   if (!request) notFound();
 
-  if (request.status === "draft") {
+  if (isContentPostBriefStage(request)) {
     redirect(`/ideas/${id}`);
   }
 
   if (
     request.status === "approved" ||
-    request.status === "queued" ||
-    request.status === "published"
+    request.status === "scheduled" ||
+    request.status === "posted"
   ) {
     return (
       <div>
