@@ -21,6 +21,10 @@ export async function generateSocialCopy(input: {
   content_type: string;
   platforms: TargetPlatform[];
   settings: AppSettings | null;
+  reviewFeedback?: {
+    problems_found: string[];
+    specific_fixes: string[];
+  } | null;
 }): Promise<{ output: GenerationOutput; model: string }> {
   const apiKey = process.env.OPENAI_API_KEY?.trim();
   if (!apiKey) throw new Error("OPENAI_API_KEY is not configured");
@@ -34,15 +38,24 @@ export async function generateSocialCopy(input: {
     input.settings?.brand_tone ??
     "premium, discreet, corporate, operationally credible, EA/PA friendly";
 
-  const system = `You write social copy for Trouv Chauffeurs (premium London chauffeur / corporate travel).
+  const feedbackBlock =
+    input.reviewFeedback?.problems_found?.length ||
+    input.reviewFeedback?.specific_fixes?.length
+      ? `\n\nPREVIOUS REVIEW FEEDBACK — address all of these in this generation:
+Problems: ${(input.reviewFeedback.problems_found ?? []).join("; ") || "none"}
+Required fixes: ${(input.reviewFeedback.specific_fixes ?? []).join("; ") || "none"}`
+      : "";
 
-Voice: premium, polished, discreet, corporate-friendly, EA/PA-friendly, operationally credible.
+  const system = `You write social copy for ${brandName} (premium London chauffeur / corporate travel).
+
+Voice: ${brandTone}
 Never: hype, childish tone, generic luxury filler, emojis unless the brief explicitly asks, exaggerated claims, startup jargon.
 
 Target platforms for this brief: ${input.platforms.join(", ")}.
-Still return JSON with all platform fields; use empty strings for copy not used on a platform if needed.
+For each target platform, write a strong hook (opening line), body copy, and CTA.
+For platforms NOT in the target list, use empty strings.
 
-Banned phrases (do not use): ${banned.length ? banned.join("; ") : "(none configured)"}
+Banned phrases (do not use): ${banned.length ? banned.join("; ") : "(none configured)"}${feedbackBlock}
 
 Return JSON only with exactly these keys:
 linkedin_hook, linkedin_post, linkedin_cta,
@@ -108,10 +121,21 @@ export async function reviewGeneratedCopy(input: {
     input.settings?.brand_tone ??
     "premium, discreet, corporate, operationally credible";
 
+  let strictnessGuide: string;
+  if (strict <= 20) {
+    strictnessGuide = `Strictness is ${strict}/100 (very lenient). Approve unless the copy is factually wrong, off-brand, or embarrassingly bad. Minor imperfections are acceptable. Scores should generally be 75+.`;
+  } else if (strict <= 50) {
+    strictnessGuide = `Strictness is ${strict}/100 (moderate). Approve if the copy is on-brand and reasonably polished. Flag obvious issues but don't nitpick.`;
+  } else if (strict <= 75) {
+    strictnessGuide = `Strictness is ${strict}/100 (strict). Expect polished, publication-ready copy. Flag tone issues, weak CTAs, and unclear messaging.`;
+  } else {
+    strictnessGuide = `Strictness is ${strict}/100 (very strict). Only approve exceptional copy. Demand specific, compelling hooks, strong CTAs, and perfect brand alignment.`;
+  }
+
   const system = `You are a senior editorial QA reviewer for ${brandName}.
 
 Brand tone: ${brandTone}
-Review strictness (0=lenient, 100=harsh): ${strict}
+${strictnessGuide}
 Banned phrases: ${banned.length ? banned.join("; ") : "none"}
 
 Score the draft copy (0-100) for overall quality, brand alignment, and clarity.

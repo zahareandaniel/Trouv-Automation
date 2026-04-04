@@ -7,6 +7,7 @@ import { generateSocialCopy } from "@/lib/openai";
 import { targetPlatformsFromDb } from "@/lib/platforms";
 import { ensureAppSettings } from "@/lib/settings";
 import { createServiceClient } from "@/lib/supabase/server";
+import type { ContentReview } from "@/lib/types";
 import { generateBodySchema } from "@/lib/validations";
 
 export async function POST(request: Request) {
@@ -80,6 +81,29 @@ export async function POST(request: Request) {
     );
   }
 
+  const { data: latestReviews } = await supabase
+    .from("content_reviews")
+    .select("problems_found, specific_fixes")
+    .eq("content_request_id", contentRequestId)
+    .order("created_at", { ascending: false })
+    .limit(1);
+
+  const latestReview = latestReviews?.[0] as
+    | Pick<ContentReview, "problems_found" | "specific_fixes">
+    | undefined;
+
+  const reviewFeedback =
+    latestReview
+      ? {
+          problems_found: Array.isArray(latestReview.problems_found)
+            ? (latestReview.problems_found as string[])
+            : [],
+          specific_fixes: Array.isArray(latestReview.specific_fixes)
+            ? (latestReview.specific_fixes as string[])
+            : [],
+        }
+      : null;
+
   let gen;
   try {
     gen = await generateSocialCopy({
@@ -88,6 +112,7 @@ export async function POST(request: Request) {
       content_type: String(req.content_type),
       platforms,
       settings,
+      reviewFeedback,
     });
   } catch (e) {
     return NextResponse.json(
