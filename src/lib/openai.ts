@@ -151,9 +151,21 @@ You MUST respond with valid JSON only — no markdown, no code fences, no explan
 
   let parsed: unknown;
   try {
-    parsed = JSON.parse(raw);
+    const cleaned = raw.replace(/^```json\s*/, "").replace(/```\s*$/, "");
+    parsed = JSON.parse(cleaned);
   } catch {
     throw new Error("Claude review response was not valid JSON");
+  }
+
+  if (
+    parsed &&
+    typeof parsed === "object" &&
+    "quality_verdict" in (parsed as Record<string, unknown>)
+  ) {
+    const obj = parsed as Record<string, unknown>;
+    if (typeof obj.quality_verdict === "string") {
+      obj.quality_verdict = obj.quality_verdict.trim().toLowerCase();
+    }
   }
 
   const out = reviewOutputSchema.safeParse(parsed);
