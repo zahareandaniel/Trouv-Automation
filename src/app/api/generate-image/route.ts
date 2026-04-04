@@ -108,8 +108,9 @@ export async function POST(request: Request) {
       topic,
       hookLine,
     });
-  } catch {
-    cardBuffer = imageBuffer; // fall back to raw photo if compositing fails
+  } catch (cardErr) {
+    console.error("Card compositing failed, using square photo:", cardErr);
+    cardBuffer = imageBuffer;
   }
 
   const ts = Date.now();

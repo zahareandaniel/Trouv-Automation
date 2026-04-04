@@ -10,12 +10,33 @@ const PHOTO_H = 810;
 
 let fontCache: { regular: Buffer; bold: Buffer } | null = null;
 
+async function tryReadFile(...paths: string[]): Promise<Buffer> {
+  for (const p of paths) {
+    try {
+      return await readFile(p);
+    } catch {
+      continue;
+    }
+  }
+  throw new Error(`Font not found in any of: ${paths.join(", ")}`);
+}
+
 async function loadFonts() {
   if (fontCache) return fontCache;
-  const dir = join(process.cwd(), "src/assets/fonts");
+  const cwd = process.cwd();
+  const regularPaths = [
+    join(cwd, "public/fonts/inter-regular.woff2"),
+    join(cwd, "src/assets/fonts/inter-regular.woff2"),
+    join(cwd, ".next/server/public/fonts/inter-regular.woff2"),
+  ];
+  const boldPaths = [
+    join(cwd, "public/fonts/inter-bold.woff2"),
+    join(cwd, "src/assets/fonts/inter-bold.woff2"),
+    join(cwd, ".next/server/public/fonts/inter-bold.woff2"),
+  ];
   const [regular, bold] = await Promise.all([
-    readFile(join(dir, "inter-regular.woff2")),
-    readFile(join(dir, "inter-bold.woff2")),
+    tryReadFile(...regularPaths),
+    tryReadFile(...boldPaths),
   ]);
   fontCache = { regular, bold };
   return fontCache;

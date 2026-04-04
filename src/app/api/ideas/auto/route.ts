@@ -251,8 +251,8 @@ export async function POST() {
           if (!cardErr) {
             cardUrl = supabase.storage.from("post-images").getPublicUrl(cardFileName).data.publicUrl;
           }
-        } catch {
-          // fall back to square for Instagram too
+        } catch (cardErr) {
+          console.error("Card compositing failed in auto pipeline:", cardErr);
         }
 
         imageUrl = squareUrl;
