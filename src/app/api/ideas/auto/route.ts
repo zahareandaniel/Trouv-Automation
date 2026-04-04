@@ -4,6 +4,7 @@ import { getSessionEmail } from "@/lib/auth";
 import { buildContentPostGenerationPatch } from "@/lib/content-posts/generation-update";
 import { mapRequest, mapReview } from "@/lib/db-map";
 import { postCopyToGenerationOutput } from "@/lib/generated-to-output";
+import { composeCardImage } from "@/lib/image-card";
 import { buildImagePrompt } from "@/lib/image-prompt";
 import {
   generateIdeaBrief,
@@ -207,28 +208,51 @@ export async function POST() {
 
       if (base64Data) {
         const imageBuffer = Buffer.from(base64Data, "base64");
-        const fileName = `${postId}-${Date.now()}.png`;
+        const ts = Date.now();
 
-        const { error: uploadErr } = await supabase.storage
+        // Square photo for LinkedIn / X
+        const squareFileName = `${postId}-${ts}.png`;
+        const { error: sqErr } = await supabase.storage
           .from("post-images")
-          .upload(fileName, imageBuffer, { contentType: "image/png", upsert: true });
+          .upload(squareFileName, imageBuffer, { contentType: "image/png", upsert: true });
 
-        if (!uploadErr) {
-          const { data: publicData } = supabase.storage
+        const squareUrl = sqErr
+          ? null
+          : supabase.storage.from("post-images").getPublicUrl(squareFileName).data.publicUrl;
+
+        // Card image for Instagram (photo + text underneath)
+        const updRow = updPost as Record<string, unknown>;
+        const hookLine =
+          String(updRow.instagram_hook ?? updRow.linkedin_hook ?? "").trim() ||
+          String(updRow.instagram_caption ?? updRow.linkedin_post ?? "").slice(0, 120);
+        let cardUrl: string | null = null;
+        try {
+          const cardBuf = await composeCardImage(imageBuffer, {
+            contentType: brief.content_type,
+            topic: brief.topic,
+            hookLine,
+          });
+          const cardFileName = `${postId}-${ts}-card.png`;
+          const { error: cardErr } = await supabase.storage
             .from("post-images")
-            .getPublicUrl(fileName);
-
-          imageUrl = publicData.publicUrl;
-
-          await supabase
-            .from("content_posts")
-            .update({
-              linkedin_image_url: imageUrl,
-              instagram_image_url: imageUrl,
-              x_image_url: imageUrl,
-            })
-            .eq("id", postId);
+            .upload(cardFileName, cardBuf, { contentType: "image/png", upsert: true });
+          if (!cardErr) {
+            cardUrl = supabase.storage.from("post-images").getPublicUrl(cardFileName).data.publicUrl;
+          }
+        } catch {
+          // fall back to square for Instagram too
         }
+
+        imageUrl = squareUrl;
+
+        await supabase
+          .from("content_posts")
+          .update({
+            linkedin_image_url: squareUrl ?? null,
+            instagram_image_url: cardUrl ?? squareUrl ?? null,
+            x_image_url: squareUrl ?? null,
+          })
+          .eq("id", postId);
       }
     } catch {
       // Image generation is non-fatal — continue without image

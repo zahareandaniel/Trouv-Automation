@@ -39,14 +39,16 @@ export async function POST(_request: Request, ctx: Ctx) {
 
   const post = row as Record<string, unknown>;
   const platforms = targetPlatformsFromDb(post.platforms);
-  const imageUrl =
-    String(post.instagram_image_url ?? post.linkedin_image_url ?? "").trim() || null;
 
   const results: { platform: TargetPlatform; success: boolean; error?: string }[] = [];
 
   for (const platform of platforms) {
     const text = textForPlatform(post as Parameters<typeof textForPlatform>[0], platform);
     if (!text.trim()) continue;
+
+    const platformImageKey = `${platform}_image_url`;
+    const imageUrl =
+      String(post[platformImageKey] ?? post.linkedin_image_url ?? "").trim() || null;
 
     const result = await queueBufferPost(platform, text, imageUrl, true);
 

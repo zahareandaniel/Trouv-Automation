@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { GoogleGenAI } from "@google/genai";
 import { getSessionEmail } from "@/lib/auth";
 import { mapRequest } from "@/lib/db-map";
+import { composeCardImage } from "@/lib/image-card";
 import { buildImagePrompt } from "@/lib/image-prompt";
 import { createServiceClient } from "@/lib/supabase/server";
 import { z } from "zod";
@@ -95,35 +96,66 @@ export async function POST(request: Request) {
     );
   }
 
-  // Upload to Supabase Storage
-  const fileName = `${contentRequestId}-${Date.now()}.png`;
-  const { error: uploadErr } = await supabase.storage
+  // Build a card version for Instagram (photo + text panel below)
+  const hookLine =
+    String(req.instagram_hook ?? req.linkedin_hook ?? "").trim() ||
+    String(req.instagram_caption ?? req.linkedin_post ?? "").slice(0, 120);
+
+  let cardBuffer: Buffer;
+  try {
+    cardBuffer = await composeCardImage(imageBuffer, {
+      contentType,
+      topic,
+      hookLine,
+    });
+  } catch {
+    cardBuffer = imageBuffer; // fall back to raw photo if compositing fails
+  }
+
+  const ts = Date.now();
+
+  // Upload square photo (LinkedIn / X)
+  const squareFileName = `${contentRequestId}-${ts}.png`;
+  const { error: sqUpErr } = await supabase.storage
     .from("post-images")
-    .upload(fileName, imageBuffer, {
+    .upload(squareFileName, imageBuffer, {
       contentType: "image/png",
       upsert: true,
     });
-
-  if (uploadErr) {
+  if (sqUpErr) {
     return NextResponse.json(
-      { error: `Storage upload failed: ${uploadErr.message}` },
+      { error: `Storage upload failed: ${sqUpErr.message}` },
       { status: 500 },
     );
   }
-
-  const { data: publicData } = supabase.storage
+  const squareUrl = supabase.storage
     .from("post-images")
-    .getPublicUrl(fileName);
+    .getPublicUrl(squareFileName).data.publicUrl;
 
-  const persistentUrl = publicData.publicUrl;
+  // Upload card image (Instagram)
+  const cardFileName = `${contentRequestId}-${ts}-card.png`;
+  const { error: cardUpErr } = await supabase.storage
+    .from("post-images")
+    .upload(cardFileName, cardBuffer, {
+      contentType: "image/png",
+      upsert: true,
+    });
+  if (cardUpErr) {
+    return NextResponse.json(
+      { error: `Storage upload failed (card): ${cardUpErr.message}` },
+      { status: 500 },
+    );
+  }
+  const cardUrl = supabase.storage
+    .from("post-images")
+    .getPublicUrl(cardFileName).data.publicUrl;
 
-  // Save to all three image_url columns (one image for all platforms)
   const { data: updated, error: upErr } = await supabase
     .from("content_posts")
     .update({
-      linkedin_image_url: persistentUrl,
-      instagram_image_url: persistentUrl,
-      x_image_url: persistentUrl,
+      linkedin_image_url: squareUrl,
+      instagram_image_url: cardUrl,
+      x_image_url: squareUrl,
     })
     .eq("id", contentRequestId)
     .select("*")
@@ -134,7 +166,8 @@ export async function POST(request: Request) {
   }
 
   return NextResponse.json({
-    imageUrl: persistentUrl,
+    imageUrl: squareUrl,
+    instagramImageUrl: cardUrl,
     request: mapRequest(updated as Record<string, unknown>),
   });
 }

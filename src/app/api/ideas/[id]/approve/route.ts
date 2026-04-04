@@ -95,11 +95,13 @@ export async function PATCH(_request: Request, ctx: Ctx) {
 
   const bufferResults: { platform: TargetPlatform; success: boolean; error?: string }[] = [];
 
-  const imageUrl = String(post.instagram_image_url ?? post.linkedin_image_url ?? "").trim() || null;
-
   for (const platform of platforms) {
     const text = textForPlatform(post as Parameters<typeof textForPlatform>[0], platform);
     if (!text.trim()) continue;
+
+    const platformImageKey = `${platform}_image_url`;
+    const imageUrl =
+      String(post[platformImageKey] ?? post.linkedin_image_url ?? "").trim() || null;
 
     const result = await queueBufferPost(platform, text, imageUrl);
 
