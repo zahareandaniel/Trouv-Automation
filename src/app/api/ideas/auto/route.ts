@@ -45,16 +45,27 @@ export async function POST() {
     );
   }
 
-  // ── Step 2: Fetch recent topics to avoid duplicates ──────────────────────
+  // ── Step 2: Fetch last 60 days of posts to avoid duplicates ─────────────
+  const sixtyDaysAgo = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString();
+
   const { data: recentRows } = await supabase
     .from("content_posts")
-    .select("topic")
-    .order("created_at", { ascending: false })
-    .limit(30);
+    .select("topic, linkedin_hook, instagram_hook, linkedin_post, instagram_caption")
+    .gte("created_at", sixtyDaysAgo)
+    .order("created_at", { ascending: false });
 
-  const recentTopics = (recentRows ?? [])
-    .map((r) => String((r as Record<string, unknown>).topic ?? "").trim())
+  const rows = (recentRows ?? []) as Record<string, unknown>[];
+
+  const recentTopics = rows
+    .map((r) => String(r.topic ?? "").trim())
     .filter(Boolean);
+
+  const recentHooks = rows
+    .flatMap((r) => [
+      String(r.linkedin_hook ?? "").trim(),
+      String(r.instagram_hook ?? "").trim(),
+    ])
+    .filter((h) => h.length > 10);
 
   // ── Step 3: OpenAI generates the idea brief ─────────────────────────────
   let brief: { topic: string; audience: string; content_type: string };
@@ -104,6 +115,7 @@ export async function POST() {
       platforms: resolvedPlatforms,
       settings,
       reviewFeedback: null,
+      recentHooks,
     });
   } catch (e) {
     return NextResponse.json(

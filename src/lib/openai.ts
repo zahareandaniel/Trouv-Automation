@@ -30,7 +30,7 @@ export async function generateIdeaBrief(
   const brandName = settings?.brand_name ?? "Trouv Chauffeurs";
 
   const recentBlock = recentTopics.length
-    ? `\n\nTHESE TOPICS HAVE ALREADY BEEN USED — do NOT repeat or rephrase any of them. Come up with something completely different:\n${recentTopics.map((t, i) => `${i + 1}. ${t}`).join("\n")}`
+    ? `\n\nBLOCKLIST — these topics have been posted in the last 60 days. LinkedIn will REJECT posts that are too similar. You MUST NOT repeat, rephrase, or create any variation of these:\n${recentTopics.map((t, i) => `${i + 1}. ${t}`).join("\n")}\n\nYour new topic must be so different that no reader could confuse it with any topic above.`
     : "";
 
   const system = `You are a content strategist for ${brandName}, a premium London chauffeur and corporate travel company.
@@ -39,7 +39,12 @@ Generate ONE unique social media content idea. Return JSON only with exactly the
 - audience: the target audience label (e.g. "Executive Assistants", "Corporate Travel Managers", "C-suite executives", "Event planners")
 - content_type: the post format (e.g. "thought leadership", "service spotlight", "client story", "tip", "case study")
 
-The topic must be COMPLETELY DIFFERENT from any previously used topics. Do not rephrase, reword, or create slight variations of existing topics. Each idea must cover a genuinely new angle or subject.
+CRITICAL UNIQUENESS RULES (LinkedIn rejects similar posts within 60 days):
+- The topic must be COMPLETELY DIFFERENT from any in the blocklist below.
+- Do not rephrase, reword, use synonyms, or create ANY variation of existing topics.
+- Each idea must cover a genuinely new angle, subject, or perspective.
+- Avoid recycling the same themes (e.g. "sustainability", "first impressions", "airport transfers") if they already appear in the blocklist — find a fresh theme entirely.
+- If you run out of obvious topics, think laterally: behind-the-scenes ops, specific routes, seasonal angles, industry news, client scenarios, fleet technology, driver training, compliance, accessibility, etc.
 Focus on real operational value for premium corporate clients.${recentBlock}
 Return JSON only — no markdown, no explanation.`;
 
@@ -86,6 +91,7 @@ export async function generateSocialCopy(input: {
     problems_found: string[];
     specific_fixes: string[];
   } | null;
+  recentHooks?: string[];
 }): Promise<{ output: GenerationOutput; model: string }> {
   const apiKey = process.env.OPENAI_API_KEY?.trim();
   if (!apiKey) throw new Error("OPENAI_API_KEY is not configured");
@@ -107,6 +113,14 @@ Problems: ${(input.reviewFeedback.problems_found ?? []).join("; ") || "none"}
 Required fixes: ${(input.reviewFeedback.specific_fixes ?? []).join("; ") || "none"}`
       : "";
 
+  const uniqueHooks = (input.recentHooks ?? []).slice(0, 40);
+  const hooksBlock = uniqueHooks.length
+    ? `\n\nUNIQUENESS REQUIREMENT (critical — LinkedIn rejects similar posts within 60 days):
+These opening lines / hooks have already been posted. Your hooks and body copy MUST be completely different — different wording, different angle, different structure. Do NOT reuse any phrase, sentence pattern, or opening style from this list:
+${uniqueHooks.map((h, i) => `${i + 1}. "${h}"`).join("\n")}
+Write something genuinely fresh that a reader would never confuse with any post above.`
+    : "";
+
   const system = `You write social copy for ${brandName} (premium London chauffeur / corporate travel).
 
 Voice: ${brandTone}
@@ -116,7 +130,7 @@ Target platforms for this brief: ${input.platforms.join(", ")}.
 For each target platform, write a strong hook (opening line), body copy, and CTA.
 For platforms NOT in the target list, use empty strings.
 
-Banned phrases (do not use): ${banned.length ? banned.join("; ") : "(none configured)"}${feedbackBlock}
+Banned phrases (do not use): ${banned.length ? banned.join("; ") : "(none configured)"}${feedbackBlock}${hooksBlock}
 
 Return JSON only with exactly these keys:
 linkedin_hook, linkedin_post, linkedin_cta,
