@@ -2,14 +2,20 @@ import type { GenerationOutput } from "@/lib/validations";
 import { STATUS_DRAFT } from "@/lib/content-posts/status";
 
 /**
- * Columns we persist after OpenAI generation. Keep aligned with your real `content_posts`
- * table — production DBs often omit hooks, CTAs, and `hashtags` until those columns exist.
- * Add keys here when you add columns in Supabase.
+ * Columns we persist after OpenAI generation.
+ * Must match real `content_posts` columns in Supabase.
  */
 export const CONTENT_POSTS_GENERATION_WRITE_KEYS = [
+  "linkedin_hook",
   "linkedin_post",
+  "linkedin_cta",
+  "instagram_hook",
   "instagram_caption",
+  "instagram_cta",
+  "x_hook",
   "x_post",
+  "x_cta",
+  "hashtags",
 ] as const;
 
 type GenerationWriteKey = (typeof CONTENT_POSTS_GENERATION_WRITE_KEYS)[number];
