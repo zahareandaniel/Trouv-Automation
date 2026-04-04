@@ -64,27 +64,47 @@ export async function POST(request: Request) {
   }
 
   const vehicleList = [
-    "black Mercedes-Benz S-Class W223",
-    "black BMW i7",
-    "black Mercedes-Benz V-Class",
-    "black Range Rover P460",
+    {
+      name: "black Mercedes-Benz S-Class W223",
+      description:
+        "a full-size ultra-luxury 4-door saloon/sedan with a long wheelbase, sleek fastback roofline, slim LED headlights, and a wide chrome-accented front grille — NOT an SUV or coupe",
+    },
+    {
+      name: "black BMW i7 (G70)",
+      description:
+        "a full-size 4-door luxury executive saloon/sedan with a large kidney grille, long bonnet, split LED headlights, and a traditional upright saloon roofline — NOT a sports car, NOT a coupe, NOT an i8. It looks like a stretched BMW 7 Series, similar in shape to an S-Class",
+    },
+    {
+      name: "black Mercedes-Benz V-Class",
+      description:
+        "a large premium MPV / people carrier with a tall boxy body, sliding rear doors, and a Mercedes three-pointed star on the front grille — clearly a van-based luxury minivan, NOT a saloon or SUV",
+    },
+    {
+      name: "black Range Rover P460 (fifth generation, L460)",
+      description:
+        "a large luxury SUV with a boxy square silhouette, clamshell bonnet, flush door handles, split LED headlights, and bold Range Rover lettering on the tailgate — clearly an SUV, NOT a saloon",
+    },
   ];
-  const vehicle = vehicleList[Math.floor(Math.random() * vehicleList.length)];
+  const chosen = vehicleList[Math.floor(Math.random() * vehicleList.length)];
 
-  const prompt = `Photorealistic professional automotive photography for a premium London chauffeur company called Trouv Chauffeurs. The image must feature a ${vehicle} as the focal point.
+  const prompt = `Photorealistic professional automotive photography for a premium London chauffeur company called Trouv Chauffeurs.
+
+The ONLY vehicle in this image must be: ${chosen.name}.
+Description of the correct vehicle shape and proportions: ${chosen.description}.
+Do NOT substitute a different BMW, Mercedes, or any other car — the correct model is critical.
 
 Topic: ${topic}
 Audience: ${audience}
 Content type: ${contentType}
 
 Requirements:
-- The vehicle must be a ${vehicle} — correct body shape, proportions, and brand details
-- Exterior colour: gloss black only
+- Colour grading: strict black and white / monochrome throughout — no colour tones, no sepia, no colour tints whatsoever
+- Exterior colour: gloss black vehicle on a dark background
 - Setting: premium urban environment — London streets, Canary Wharf, Mayfair, City of London, Heathrow terminal exterior, or a hotel entrance at night
-- Lighting: cinematic, dramatic, wet road reflections, ambient city glow
-- Style: editorial automotive photography, sharp focus on the car, shallow depth of field background
-- A professional chauffeur in a dark suit may be present but optional
-- No text, logos, watermarks, or overlays of any kind
+- Lighting: cinematic, dramatic, high-contrast monochrome lighting, wet road reflections rendered in shades of grey
+- Style: fine-art monochrome editorial automotive photography, sharp focus on the car, shallow depth of field background
+- A professional chauffeur in a dark suit standing beside the car is optional
+- No text, logos, number plates, watermarks, or overlays of any kind
 - Square 1:1 composition optimised for social media`;
 
 
