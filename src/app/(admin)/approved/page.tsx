@@ -1,3 +1,4 @@
+import Image from "next/image";
 import {
   getSuccessfulPublishKeys,
   listApproved,
@@ -28,28 +29,41 @@ export default async function ApprovedPage() {
             const hasCopy = postHasGeneratedCopy(r);
             return (
               <div key={r.id} className="border border-border bg-surface p-5">
-                <h2 className="font-serif text-xl text-text">{r.topic}</h2>
-                {!hasCopy ? (
-                  <p className="mt-2 text-sm text-danger">
-                    No generated copy on this post
-                  </p>
-                ) : (
-                  <div className="mt-4 flex flex-wrap gap-2">
-                    {plats.map((p) => {
-                      const key = `${r.id}:${p}`;
-                      const done = queued.has(key);
-                      return (
-                        <PlatformQueueButton
-                          key={p}
-                          contentRequestId={r.id}
-                          platform={p as TargetPlatform}
-                          post={r}
-                          disabled={done}
-                        />
-                      );
-                    })}
+                <div className="flex gap-5">
+                  {r.linkedin_image_url && (
+                    <Image
+                      src={r.linkedin_image_url}
+                      alt={r.topic}
+                      width={120}
+                      height={120}
+                      className="hidden shrink-0 rounded-sm object-cover sm:block"
+                    />
+                  )}
+                  <div className="flex-1">
+                    <h2 className="font-serif text-xl text-text">{r.topic}</h2>
+                    {!hasCopy ? (
+                      <p className="mt-2 text-sm text-danger">
+                        No generated copy on this post
+                      </p>
+                    ) : (
+                      <div className="mt-4 flex flex-wrap gap-2">
+                        {plats.map((p) => {
+                          const key = `${r.id}:${p}`;
+                          const done = queued.has(key);
+                          return (
+                            <PlatformQueueButton
+                              key={p}
+                              contentRequestId={r.id}
+                              platform={p as TargetPlatform}
+                              post={r}
+                              disabled={done}
+                            />
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
-                )}
+                </div>
               </div>
             );
           })

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
 import { StatusBadge } from "@/components/status-badge";
+import Image from "next/image";
 import { STATUS_DRAFT, STATUS_FAILED } from "@/lib/content-posts/status";
 import type { ContentRequest, ContentReview } from "@/lib/types";
 
@@ -113,6 +114,16 @@ export function DraftDetailClient({
     }
   }
 
+  async function generateImage() {
+    const ok = await post("/api/generate-image", "POST", {
+      contentRequestId: request.id,
+    });
+    if (ok) {
+      toast.success("Image generated");
+      router.refresh();
+    }
+  }
+
   const tags = request.hashtags?.length
     ? request.hashtags.map((t) => `#${t.replace(/^#/, "")}`).join(" ")
     : "—";
@@ -157,6 +168,43 @@ export function DraftDetailClient({
           Hashtags
         </p>
         <p className="mt-2 text-sm text-text">{tags}</p>
+      </div>
+
+      <div className="border border-border bg-surface p-4">
+        <p className="font-mono text-[10px] uppercase tracking-wider text-muted">
+          Post image
+        </p>
+        {request.linkedin_image_url ? (
+          <div className="mt-3">
+            <Image
+              src={request.linkedin_image_url}
+              alt="Generated post image"
+              width={400}
+              height={400}
+              className="w-full max-w-sm rounded-sm object-cover"
+            />
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => void generateImage()}
+              className="mt-3 border border-border px-3 py-1.5 font-mono text-[10px] uppercase tracking-wider text-muted hover:border-accent hover:text-text disabled:opacity-40"
+            >
+              Regenerate image
+            </button>
+          </div>
+        ) : (
+          <div className="mt-3">
+            <p className="text-sm text-muted">No image yet.</p>
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => void generateImage()}
+              className="mt-3 border border-accent px-4 py-2 font-mono text-xs uppercase tracking-wider text-accent hover:bg-surface disabled:opacity-40"
+            >
+              Generate image
+            </button>
+          </div>
+        )}
       </div>
 
       <div className="flex flex-wrap gap-3">
