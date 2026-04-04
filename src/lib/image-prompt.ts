@@ -19,12 +19,12 @@ const vehicleList = [
   },
   {
     chassis: "L460",
-    name: "Range Rover L460 (fifth generation)",
-    body: "large full-size luxury SUV",
+    name: "Range Rover Autobiography L460 (fifth generation, 2023-2026 model)",
+    body: "large full-size luxury SUV — the CURRENT generation, NOT any previous model",
     visualDescription:
-      "boxy square-shouldered full-size SUV with a flat clamshell bonnet, flush pop-out door handles, thin split LED headlights, a smooth uninterrupted side profile with no visible door handles, upright D-pillar, and 'RANGE ROVER' lettering spaced across the tailgate. NOT a Sport, NOT a Defender, NOT a Velar.",
+      "This is the LATEST 2023-2026 fifth-generation Range Rover L460. Key identifying features that MUST all be present: (1) very clean minimalist flush bodywork with no visible door handles — the handles are flush pop-out type hidden in the door surface, (2) ultra-thin split LED headlights with a slim horizontal DRL bar on top and the main beam unit below separated by a body-colour strip, (3) a completely flat clamshell bonnet that extends all the way to the base of the windscreen with no shut-lines, (4) a smooth slab-sided profile with sharp square shoulders and a perfectly straight horizontal waistline from nose to tail, (5) an upright near-vertical D-pillar with a signature 'floating roof' effect — the roof appears detached from the body via a gloss black pillar, (6) 'RANGE ROVER' individual spaced-out capital letters across the bonnet and tailgate — NOT a badge. The overall shape is a tall refined box on wheels — it should look like a luxury yacht, NOT a chunky off-roader. The PREVIOUS L405 generation (2012-2022) has visible protruding door handles, more rounded headlights, a less flat bonnet, and a less clean side profile — do NOT draw that older model.",
     notThisVehicle:
-      "Do NOT draw a Range Rover Sport, Defender, Discovery, Evoque, or Velar.",
+      "Do NOT draw the previous L405 Range Rover (2012-2022). Do NOT draw a Range Rover Sport, Defender, Discovery, Evoque, or Velar. The L460 looks dramatically cleaner and more modern than any previous Range Rover.",
   },
   {
     chassis: "G70",
