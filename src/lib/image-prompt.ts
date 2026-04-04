@@ -44,16 +44,29 @@ export function buildImagePrompt(input: {
 }): string {
   const chosen = vehicleList[Math.floor(Math.random() * vehicleList.length)];
 
-  return `Photorealistic editorial lifestyle photography for a premium London chauffeur service. Black-and-white / monochrome only — no colour, no sepia, no tints.
+  const scenes = [
+    "The chauffeur holds a small white name board with a client name, greeting a business traveller who is stepping out of the rear passenger door with a carry-on suitcase. The rear door is open. Shot from the rear three-quarter angle so both the car's rear and the chauffeur are visible.",
+    "The chauffeur opens the rear passenger door for a corporate client carrying a briefcase, at a luxury hotel entrance with a canopy visible overhead. Shot from a side angle showing the full length of the car.",
+    "The chauffeur stands at the front of the car with hands clasped, waiting beside the arrivals exit of an airport terminal. Travellers and signage are visible in the background. Shot from a wide angle showing the full scene.",
+    "The chauffeur assists a client with luggage at the boot/trunk of the car, in front of a modern glass office building. Shot from a three-quarter rear angle.",
+    "The chauffeur walks alongside a client toward the parked car on a prestigious London street with period architecture. Both are in motion, natural and candid. Shot from a medium distance.",
+  ];
+  const scene = scenes[Math.floor(Math.random() * scenes.length)];
 
-SCENE COMPOSITION (critical):
-- A professional male chauffeur stands beside or near the vehicle, facing the camera or looking toward the client's arrival direction
-- The chauffeur wears a well-fitted dark charcoal or black modern slim suit, white shirt, dark tie, and polished black shoes
-- STRICT RULES: the chauffeur must NOT wear a hat, cap, or any headwear. He must NOT wear gloves. His hands are bare. He has a clean, modern professional appearance — no old-fashioned or costume-like chauffeur outfits
-- The chauffeur should look natural and confident — like a real high-end private driver, not a costume character
-- Body language: standing upright with hands clasped in front or one hand on the rear door handle, ready to open it for a client
+  return `Photorealistic black-and-white documentary-style editorial photograph for a premium London chauffeur service. This should look like a real moment captured by a professional photographer — natural, authentic, not posed or over-stylised.
 
-VEHICLE IDENTITY (this is the most important instruction):
+SCENE (this describes exactly what is happening in the image):
+${scene}
+
+CHAUFFEUR APPEARANCE (strict rules):
+- Male, well-groomed, clean-shaven or neatly trimmed
+- Wearing a well-fitted dark charcoal or black modern slim-cut suit, crisp white shirt, dark tie, polished black shoes
+- MUST NOT wear a hat, cap, or any headwear — bare head only
+- MUST NOT wear gloves — bare hands only
+- He looks like a real high-end private driver — modern, professional, not a costume character
+- No old-fashioned chauffeur uniforms, no peaked caps, no white gloves
+
+VEHICLE IDENTITY (most important visual instruction):
 - Chassis code: ${chosen.chassis}
 - Full name: ${chosen.name}
 - Body style: ${chosen.body}
@@ -62,20 +75,18 @@ VEHICLE IDENTITY (this is the most important instruction):
 - Render ONLY this exact vehicle. If unsure, default to chassis code ${chosen.chassis}.
 
 Context:
-- Brand: Trouv Chauffeurs, a premium London chauffeur company
+- Brand: Trouv Chauffeurs, premium London chauffeur company
 - Topic: ${input.topic}
 - Audience: ${input.audience}
-- Content type: ${input.contentType}
 
-Photographic requirements:
-- BLACK AND WHITE / MONOCHROME only — every element in greyscale, zero colour information
-- Vehicle exterior: gloss black, deep charcoal and black tones in monochrome
-- Setting: a real recognisable London location — Heathrow terminal arrivals/departures forecourt, a Mayfair hotel entrance, Canary Wharf office tower drop-off, Knightsbridge street, or a City of London corporate building entrance
-- The background should be clearly identifiable as a real place — not a generic dark void
-- Lighting: natural daylight or overcast London light, editorial and clean, not overly dramatic
-- Style: lifestyle editorial photography — the kind you'd see in a premium service company's blog or brochure. Natural, authentic, not over-stylised
-- Camera angle: three-quarter front view of the vehicle with the chauffeur visible, shot at eye level
-- The vehicle's number plate must read "TROUV" in clear capital letters — this is the only text allowed in the image
+Photography style:
+- BLACK AND WHITE / MONOCHROME — every element in greyscale, absolutely no colour
+- Vehicle: gloss black, rendered in deep charcoal tones
+- Setting: a real, recognisable London location — Heathrow Terminal 5 forecourt, Mayfair hotel entrance, Canary Wharf, The Shard area, Knightsbridge, or City of London. The environment must look real with visible architecture, signage, other cars, and people in the background
+- Lighting: natural daylight or soft overcast London light — clean editorial lighting, not overly dramatic or cinematic
+- The photo should feel like it was taken during a real service — a genuine moment, not a studio shoot
+- Camera: eye-level, slight wide angle to capture both the vehicle and surroundings
+- The vehicle's number plate must read "TROUV" in clear capital letters
 - No other text, logos, watermarks, or graphic overlays
-- Square 1:1 format optimised for Instagram / LinkedIn`;
+- Square 1:1 composition for Instagram / LinkedIn`;
 }
