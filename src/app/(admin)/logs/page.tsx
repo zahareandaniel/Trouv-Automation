@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { LogDeleteButton } from "@/components/log-delete-button";
 import { listPublishLogs } from "@/lib/queries";
 
 function fmt(iso: string) {
@@ -79,12 +80,13 @@ export default async function LogsPage({
               <th className="px-3 py-2">Provider</th>
               <th className="px-3 py-2">Status</th>
               <th className="px-3 py-2">Error</th>
+              <th className="px-3 py-2"></th>
             </tr>
           </thead>
           <tbody>
             {logs.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-4 py-8 text-center text-muted">
+                <td colSpan={7} className="px-4 py-8 text-center text-muted">
                   No log rows
                 </td>
               </tr>
@@ -100,6 +102,9 @@ export default async function LogsPage({
                   <td className="px-3 py-2 font-mono text-xs">{l.status}</td>
                   <td className="px-3 py-2 text-xs text-danger">
                     {l.error_message ?? "—"}
+                  </td>
+                  <td className="px-3 py-2">
+                    <LogDeleteButton id={l.id} />
                   </td>
                 </tr>
               ))
