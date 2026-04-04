@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSessionEmail } from "@/lib/auth";
+import { deleteBufferPost } from "@/lib/buffer";
 import { mapRequest } from "@/lib/db-map";
 import { isContentPostBriefStage } from "@/lib/post-copy";
 import { createServiceClient } from "@/lib/supabase/server";
@@ -112,6 +113,22 @@ export async function DELETE(_request: Request, ctx: Ctx) {
   if (fe) return NextResponse.json({ error: fe.message }, { status: 500 });
   if (!row) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
+  // Remove scheduled posts from Buffer before deleting locally
+  const { data: logs } = await supabase
+    .from("publish_logs")
+    .select("provider_post_id, status")
+    .eq("content_request_id", id);
+
+  const bufferDeletions: string[] = [];
+  for (const log of logs ?? []) {
+    const rec = log as Record<string, unknown>;
+    const pid = String(rec.provider_post_id ?? "").trim();
+    if (pid) {
+      const result = await deleteBufferPost(pid);
+      if (result.success) bufferDeletions.push(pid);
+    }
+  }
+
   // Delete related rows first (reviews, logs), then the post itself
   await supabase.from("content_reviews").delete().eq("content_request_id", id);
   await supabase.from("publish_logs").delete().eq("content_request_id", id);
@@ -119,5 +136,5 @@ export async function DELETE(_request: Request, ctx: Ctx) {
   const { error } = await supabase.from("content_posts").delete().eq("id", id);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({ ok: true, bufferDeletions });
 }

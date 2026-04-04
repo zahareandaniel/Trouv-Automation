@@ -9,7 +9,7 @@ export type BufferResult = {
 
 const URL = "https://api.buffer.com";
 
-const MUTATION = `
+const CREATE_MUTATION = `
 mutation CreatePost($input: CreatePostInput!) {
   createPost(input: $input) {
     ... on PostActionSuccess {
@@ -19,6 +19,19 @@ mutation CreatePost($input: CreatePostInput!) {
       }
     }
     ... on MutationError {
+      message
+    }
+  }
+}
+`;
+
+const DELETE_MUTATION = `
+mutation DeletePost($input: DeletePostInput!) {
+  deletePost(input: $input) {
+    ... on DeletePostSuccess {
+      id
+    }
+    ... on VoidMutationError {
       message
     }
   }
@@ -98,7 +111,7 @@ export async function queueBufferPost(
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify({ query: MUTATION, variables: { input } }),
+      body: JSON.stringify({ query: CREATE_MUTATION, variables: { input } }),
       cache: "no-store",
     });
   } catch (e) {
@@ -170,4 +183,54 @@ export async function queueBufferPost(
     raw,
     errorMessage: "Unexpected Buffer response",
   };
+}
+
+/**
+ * Deletes a post from Buffer by its post ID.
+ * Silently succeeds if the post was already published or doesn't exist.
+ */
+export async function deleteBufferPost(
+  bufferPostId: string,
+): Promise<{ success: boolean; error?: string }> {
+  const token = process.env.BUFFER_ACCESS_TOKEN?.trim();
+  if (!token) return { success: false, error: "BUFFER_ACCESS_TOKEN not configured" };
+
+  try {
+    const res = await fetch(URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        query: DELETE_MUTATION,
+        variables: { input: { id: bufferPostId } },
+      }),
+      cache: "no-store",
+    });
+
+    if (!res.ok) return { success: false, error: `HTTP ${res.status}` };
+
+    const body = (await res.json()) as {
+      errors?: { message?: string }[];
+      data?: {
+        deletePost?: { id?: string; message?: string };
+      };
+    };
+
+    if (body.errors?.length) {
+      return {
+        success: false,
+        error: body.errors.map((e) => e.message ?? "GraphQL error").join("; "),
+      };
+    }
+
+    if (body.data?.deletePost?.message) {
+      return { success: false, error: body.data.deletePost.message };
+    }
+
+    return { success: true };
+  } catch (e) {
+    return { success: false, error: e instanceof Error ? e.message : "Network error" };
+  }
 }
