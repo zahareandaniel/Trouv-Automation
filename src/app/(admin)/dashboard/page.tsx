@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { AutoIdeaButton } from "@/components/auto-idea-button";
 import { StatusBadge } from "@/components/status-badge";
 import { STATUS_IDEA } from "@/lib/content-posts/status";
 import { getDashboardStats, listRecentRequests } from "@/lib/queries";
@@ -43,9 +44,12 @@ export default async function DashboardPage() {
 
   return (
     <div>
-      <header className="mb-10">
-        <h1 className="font-serif text-3xl text-text">Dashboard</h1>
-        <p className="mt-2 text-sm text-muted">Pipeline overview</p>
+      <header className="mb-10 flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h1 className="font-serif text-3xl text-text">Dashboard</h1>
+          <p className="mt-2 text-sm text-muted">Pipeline overview</p>
+        </div>
+        <AutoIdeaButton />
       </header>
 
       {loadError ? (

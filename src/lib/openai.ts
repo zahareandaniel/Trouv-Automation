@@ -15,6 +15,59 @@ function bannedList(settings: AppSettings | null): string[] {
   return [];
 }
 
+export async function generateIdeaBrief(settings: AppSettings | null): Promise<{
+  topic: string;
+  audience: string;
+  content_type: string;
+}> {
+  const apiKey = process.env.OPENAI_API_KEY?.trim();
+  if (!apiKey) throw new Error("OPENAI_API_KEY is not configured");
+
+  const model = process.env.OPENAI_DEFAULT_MODEL?.trim() || "gpt-4o-mini";
+  const brandName = settings?.brand_name ?? "Trouv Chauffeurs";
+
+  const system = `You are a content strategist for ${brandName}, a premium London chauffeur and corporate travel company.
+Generate ONE unique social media content idea. Return JSON only with exactly these keys:
+- topic: a concise content topic (e.g. "Airport transfer reliability", "Corporate event fleet management")
+- audience: the target audience label (e.g. "Executive Assistants", "Corporate Travel Managers", "C-suite executives", "Event planners")
+- content_type: the post format (e.g. "thought leadership", "service spotlight", "client story", "tip", "case study")
+
+Be specific and varied. Avoid repeating common themes. Focus on real operational value for premium corporate clients.
+Return JSON only — no markdown, no explanation.`;
+
+  const client = new OpenAI({ apiKey });
+  const completion = await client.chat.completions.create({
+    model,
+    response_format: { type: "json_object" },
+    messages: [
+      { role: "system", content: system },
+      { role: "user", content: "Generate a fresh content idea for today." },
+    ],
+    temperature: 0.9,
+  });
+
+  const raw = completion.choices[0]?.message?.content;
+  if (!raw) throw new Error("Empty OpenAI response for idea brief");
+
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    throw new Error("OpenAI returned invalid JSON for idea brief");
+  }
+
+  const obj = parsed as Record<string, unknown>;
+  const topic = String(obj.topic ?? "").trim();
+  const audience = String(obj.audience ?? "").trim();
+  const content_type = String(obj.content_type ?? "").trim();
+
+  if (!topic || !audience || !content_type) {
+    throw new Error("Incomplete idea brief from OpenAI");
+  }
+
+  return { topic, audience, content_type };
+}
+
 export async function generateSocialCopy(input: {
   topic: string;
   audience: string;
