@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { GoogleGenAI } from "@google/genai";
 import { getSessionEmail } from "@/lib/auth";
 import { mapRequest } from "@/lib/db-map";
+import { buildImagePrompt } from "@/lib/image-prompt";
 import { createServiceClient } from "@/lib/supabase/server";
 import { z } from "zod";
 
@@ -63,73 +64,7 @@ export async function POST(request: Request) {
     );
   }
 
-  // Each entry: chassis code used as the hard identity anchor, plus a precise
-  // visual description to prevent DALL-E from substituting a similar model.
-  const vehicleList = [
-    {
-      chassis: "W223",
-      name: "Mercedes-Benz S-Class W223",
-      body: "4-door full-size luxury saloon / sedan",
-      visualDescription:
-        "long wheelbase 4-door saloon with a gently sloping fastback roofline, wide split-bar front grille with a prominent three-pointed star, slim horizontal LED headlights that wrap around the front corners, large smooth bonnet, and chrome body trim. NOT an SUV, NOT a coupe, NOT a sports car.",
-      notThisVehicle:
-        "Do NOT draw an E-Class, C-Class, CLS, AMG GT, or any SUV.",
-    },
-    {
-      chassis: "W447",
-      name: "Mercedes-Benz V-Class W447",
-      body: "large premium MPV / people carrier",
-      visualDescription:
-        "tall boxy van-based MPV body with a high roofline, two sliding rear passenger doors on each side, a flat vertical front fascia with a Mercedes three-pointed star on the grille, and a long wheelbase. It looks like a luxury minivan or large people carrier. NOT a saloon, NOT an SUV.",
-      notThisVehicle:
-        "Do NOT draw an S-Class, GLS, Sprinter van, or any saloon car.",
-    },
-    {
-      chassis: "L460",
-      name: "Range Rover L460 (fifth generation)",
-      body: "large full-size luxury SUV",
-      visualDescription:
-        "boxy square-shouldered full-size SUV with a flat clamshell bonnet, flush pop-out door handles, thin split LED headlights, a smooth uninterrupted side profile with no visible door handles, upright D-pillar, and 'RANGE ROVER' lettering spaced across the tailgate. NOT a Sport, NOT a Defender, NOT a Velar.",
-      notThisVehicle:
-        "Do NOT draw a Range Rover Sport, Defender, Discovery, Evoque, or Velar.",
-    },
-    {
-      chassis: "G70",
-      name: "BMW 7 Series i7 G70",
-      body: "4-door full-size luxury saloon / sedan",
-      visualDescription:
-        "large 4-door luxury saloon with a very large upright split two-piece kidney grille, long smooth bonnet, upright traditional saloon roofline (NOT a fastback), split LED headlights, and a formal three-box sedan shape similar to a Mercedes S-Class in size. It is a SALOON, NOT a sports car, NOT a coupe, NOT an i8, NOT an i5, NOT an M5.",
-      notThisVehicle:
-        "Do NOT draw a BMW i8, i5, M5, M3, 5 Series, or any coupe or sports car.",
-    },
-  ];
-  const chosen = vehicleList[Math.floor(Math.random() * vehicleList.length)];
-
-  const prompt = `Photorealistic fine-art monochrome automotive photography. Strict black-and-white image only — absolutely no colour, no sepia, no colour tints of any kind.
-
-VEHICLE IDENTITY (this is the most important instruction):
-- Chassis code: ${chosen.chassis}
-- Full name: ${chosen.name}
-- Body style: ${chosen.body}
-- Exact visual appearance: ${chosen.visualDescription}
-- ${chosen.notThisVehicle}
-- The vehicle chassis code is ${chosen.chassis}. Render ONLY this exact vehicle. If you are unsure, default to this chassis code.
-
-Context:
-- Brand: Trouv Chauffeurs, a premium London chauffeur company
-- Topic: ${topic}
-- Audience: ${audience}
-- Content type: ${contentType}
-
-Photographic requirements:
-- BLACK AND WHITE / MONOCHROME only — render every element in greyscale, zero colour information
-- Vehicle exterior: gloss black, rendered in deep charcoal and black tones in monochrome
-- Setting: prestigious London location — Canary Wharf, Mayfair, The City, Heathrow terminal forecourt, or a luxury hotel entrance
-- Lighting: dramatic high-contrast cinematic lighting, wet tarmac with grey reflections, bokeh background
-- Style: editorial luxury automotive photography, sharp focus on vehicle, shallow depth of field
-- Optional: one professional chauffeur in a dark suit standing beside the vehicle
-- STRICTLY NO text, logos, number plates, watermarks, or any graphic overlays
-- Square 1:1 format optimised for Instagram / LinkedIn`;
+  const prompt = buildImagePrompt({ topic, audience, contentType });
 
 
   // Generate image with Google Gemini Nano Banana 2 (gemini-3.1-flash-image-preview)
