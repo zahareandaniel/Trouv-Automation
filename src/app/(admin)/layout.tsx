@@ -10,8 +10,10 @@ export default function AdminLayout({
   return (
     <div className="min-h-screen bg-canvas text-text">
       <Sidebar />
-      <div className="pl-[220px]">
-        <main className="mx-auto max-w-6xl px-8 py-10">{children}</main>
+      <div className="md:pl-[220px]">
+        <main className="mx-auto max-w-6xl px-4 pb-10 pt-[72px] sm:px-6 md:px-8 md:pt-10">
+          {children}
+        </main>
       </div>
     </div>
   );

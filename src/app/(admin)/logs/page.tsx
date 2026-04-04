@@ -69,8 +69,8 @@ export default async function LogsPage({
         </Link>
       </div>
 
-      <div className="mt-6 border border-border">
-        <table className="w-full text-left text-sm">
+      <div className="mt-6 overflow-x-auto border border-border">
+        <table className="w-full min-w-[600px] text-left text-sm">
           <thead>
             <tr className="border-b border-border font-mono text-[10px] uppercase tracking-wider text-muted">
               <th className="px-3 py-2">Date</th>

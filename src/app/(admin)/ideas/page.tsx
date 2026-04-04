@@ -26,8 +26,8 @@ export default async function IdeasPage() {
         </Link>
       </div>
 
-      <div className="border border-border">
-        <table className="w-full text-left text-sm">
+      <div className="overflow-x-auto border border-border">
+        <table className="w-full min-w-[520px] text-left text-sm">
           <thead>
             <tr className="border-b border-border font-mono text-[10px] uppercase tracking-wider text-muted">
               <th className="px-4 py-2">Topic</th>

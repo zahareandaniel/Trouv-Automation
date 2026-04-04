@@ -78,8 +78,8 @@ export default async function DashboardPage() {
         <h2 className="font-mono text-[10px] uppercase tracking-wider text-muted">
           Recent activity
         </h2>
-        <div className="mt-4 border border-border">
-          <table className="w-full text-left text-sm">
+        <div className="mt-4 overflow-x-auto border border-border">
+          <table className="w-full min-w-[480px] text-left text-sm">
             <thead>
               <tr className="border-b border-border font-mono text-[10px] uppercase tracking-wider text-muted">
                 <th className="px-4 py-2">Topic</th>
