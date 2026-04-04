@@ -105,18 +105,16 @@ export async function DELETE(_request: Request, ctx: Ctx) {
 
   const { data: row, error: fe } = await supabase
     .from("content_posts")
-    .select("*")
+    .select("id")
     .eq("id", id)
     .maybeSingle();
 
   if (fe) return NextResponse.json({ error: fe.message }, { status: 500 });
   if (!row) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  if (!isContentPostBriefStage(mapRequest(row as Record<string, unknown>))) {
-    return NextResponse.json(
-      { error: "Only brief-stage posts can be deleted" },
-      { status: 400 },
-    );
-  }
+
+  // Delete related rows first (reviews, logs), then the post itself
+  await supabase.from("content_reviews").delete().eq("content_request_id", id);
+  await supabase.from("publish_logs").delete().eq("content_request_id", id);
 
   const { error } = await supabase.from("content_posts").delete().eq("id", id);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });

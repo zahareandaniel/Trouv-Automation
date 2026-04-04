@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { AutoIdeaButton } from "@/components/auto-idea-button";
+import { PostDeleteButton } from "@/components/post-delete-button";
 import { StatusBadge } from "@/components/status-badge";
 import { STATUS_IDEA } from "@/lib/content-posts/status";
 import { getDashboardStats, listRecentRequests } from "@/lib/queries";
@@ -89,12 +90,13 @@ export default async function DashboardPage() {
                 <th className="px-4 py-2">Topic</th>
                 <th className="px-4 py-2">Status</th>
                 <th className="px-4 py-2">Updated</th>
+                <th className="px-4 py-2"></th>
               </tr>
             </thead>
             <tbody>
               {recent.length === 0 ? (
                 <tr>
-                  <td colSpan={3} className="px-4 py-8 text-center text-muted">
+                  <td colSpan={4} className="px-4 py-8 text-center text-muted">
                     No requests yet
                   </td>
                 </tr>
@@ -118,6 +120,9 @@ export default async function DashboardPage() {
                     </td>
                     <td className="px-4 py-3 text-xs text-muted">
                       {fmt(r.updated_at)}
+                    </td>
+                    <td className="px-4 py-3">
+                      <PostDeleteButton id={r.id} />
                     </td>
                   </tr>
                 ))
