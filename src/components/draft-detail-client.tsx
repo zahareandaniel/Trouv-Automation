@@ -89,10 +89,29 @@ export function DraftDetailClient({
   }
 
   async function approve() {
-    const ok = await post(`/api/ideas/${request.id}/approve`, "PATCH");
-    if (ok) {
-      toast.success("Approved");
-      router.push("/approved");
+    setBusy(true);
+    try {
+      const res = await fetch(`/api/ideas/${request.id}/approve`, {
+        method: "PATCH",
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(data.error ?? "Approval failed");
+        return;
+      }
+      if (data.scheduled) {
+        toast.success("Approved & queued to Buffer — post is scheduled");
+        if (data.bufferWarning) toast.warning(data.bufferWarning);
+        router.push("/drafts");
+      } else {
+        toast.success("Approved");
+        if (data.bufferWarning) toast.error(`Buffer: ${data.bufferWarning}`);
+        router.push("/approved");
+      }
+    } catch {
+      toast.error("Network error");
+    } finally {
+      setBusy(false);
     }
   }
 

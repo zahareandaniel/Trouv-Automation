@@ -17,7 +17,7 @@ export default async function ApprovedPage() {
     <div>
       <h1 className="font-serif text-3xl text-text">Approved</h1>
       <p className="mt-2 text-sm text-muted">
-        Queue per platform to Buffer. Env channel IDs are used server-side.
+        Posts here were approved but Buffer queuing failed. Retry below or check your Buffer connection.
       </p>
 
       <div className="mt-8 space-y-6">

@@ -3,22 +3,8 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
+import { textForPlatform } from "@/lib/post-text";
 import type { ContentRequest, TargetPlatform } from "@/lib/types";
-
-function textForPlatform(post: ContentRequest, p: TargetPlatform): string {
-  switch (p) {
-    case "linkedin":
-      return [post.linkedin_hook, post.linkedin_post, post.linkedin_cta]
-        .filter(Boolean)
-        .join("\n\n");
-    case "instagram":
-      return [post.instagram_hook, post.instagram_caption, post.instagram_cta]
-        .filter(Boolean)
-        .join("\n\n");
-    case "x":
-      return [post.x_hook, post.x_post, post.x_cta].filter(Boolean).join("\n\n");
-  }
-}
 
 export function PlatformQueueButton({
   contentRequestId,

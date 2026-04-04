@@ -4,9 +4,15 @@ import {
   parseDbContentPostStatus,
   STATUS_APPROVED,
   STATUS_DRAFT,
+  STATUS_SCHEDULED,
 } from "@/lib/content-posts/status";
+import { queueBufferPost } from "@/lib/buffer";
 import { mapRequest, mapReview } from "@/lib/db-map";
+import { targetPlatformsFromDb } from "@/lib/platforms";
+import { textForPlatform } from "@/lib/post-text";
+import { envChannelId } from "@/lib/request-helpers";
 import { createServiceClient } from "@/lib/supabase/server";
+import type { TargetPlatform } from "@/lib/types";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -73,7 +79,8 @@ export async function PATCH(_request: Request, ctx: Ctx) {
     );
   }
 
-  const { data: updated, error: upErr } = await supabase
+  // ── Set status to approved ────────────────────────────────────────────────
+  const { data: approved, error: upErr } = await supabase
     .from("content_posts")
     .update({ status: STATUS_APPROVED })
     .eq("id", id)
@@ -82,8 +89,69 @@ export async function PATCH(_request: Request, ctx: Ctx) {
 
   if (upErr) return NextResponse.json({ error: upErr.message }, { status: 500 });
 
+  // ── Auto-schedule to Buffer ───────────────────────────────────────────────
+  const post = approved as Record<string, unknown>;
+  const platforms = targetPlatformsFromDb(post.platforms);
+
+  const bufferResults: { platform: TargetPlatform; success: boolean; error?: string }[] = [];
+
+  for (const platform of platforms) {
+    const text = textForPlatform(post as Parameters<typeof textForPlatform>[0], platform);
+    if (!text.trim()) continue;
+
+    const result = await queueBufferPost(platform, text);
+
+    // Log every attempt to publish_logs
+    await supabase.from("publish_logs").insert({
+      content_request_id: id,
+      generated_content_id: null,
+      platform,
+      provider: "buffer",
+      provider_post_id: result.postId,
+      channel_id: envChannelId(platform) || null,
+      posted_text: text,
+      status: result.success ? "success" : "error",
+      error_message: result.errorMessage,
+      provider_response:
+        result.raw && typeof result.raw === "object"
+          ? (result.raw as Record<string, unknown>)
+          : { raw: result.raw },
+    });
+
+    bufferResults.push({
+      platform,
+      success: result.success,
+      error: result.errorMessage ?? undefined,
+    });
+  }
+
+  // If every platform queued successfully → mark as scheduled
+  const allQueued = bufferResults.length > 0 && bufferResults.every((r) => r.success);
+  const anyQueued = bufferResults.some((r) => r.success);
+
+  let finalStatus = STATUS_APPROVED;
+  if (allQueued || anyQueued) {
+    finalStatus = STATUS_SCHEDULED;
+  }
+
+  const { data: updated, error: finalErr } = await supabase
+    .from("content_posts")
+    .update({ status: finalStatus })
+    .eq("id", id)
+    .select("*")
+    .single();
+
+  if (finalErr) return NextResponse.json({ error: finalErr.message }, { status: 500 });
+
+  const bufferErrors = bufferResults.filter((r) => !r.success);
+
   return NextResponse.json({
     request: mapRequest(updated as Record<string, unknown>),
     latestReview: mapReview(latest),
+    scheduled: finalStatus === STATUS_SCHEDULED,
+    bufferResults,
+    ...(bufferErrors.length > 0 && {
+      bufferWarning: `Some platforms failed to queue: ${bufferErrors.map((e) => `${e.platform} (${e.error})`).join(", ")}`,
+    }),
   });
 }
