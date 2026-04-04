@@ -56,11 +56,23 @@ export const generationOutputSchema = z.object({
   hashtags: z.array(z.string()),
 });
 
+const VALID_VERDICTS = ["approve", "revise", "reject"] as const;
+
+const normalizeVerdict = z.preprocess((v) => {
+  if (typeof v !== "string") return v;
+  const lower = v.trim().toLowerCase();
+  if (VALID_VERDICTS.includes(lower as (typeof VALID_VERDICTS)[number])) return lower;
+  for (const vv of VALID_VERDICTS) {
+    if (lower.startsWith(vv)) return vv;
+  }
+  return lower;
+}, z.enum(VALID_VERDICTS));
+
 export const reviewOutputSchema = z.object({
   overall_score: z.number(),
   brand_alignment_score: z.number(),
   clarity_score: z.number(),
-  quality_verdict: z.enum(["approve", "revise", "reject"]),
+  quality_verdict: normalizeVerdict,
   problems_found: z.array(z.string()),
   specific_fixes: z.array(z.string()),
   revised_suggestions: z.object({
