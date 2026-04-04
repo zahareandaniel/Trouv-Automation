@@ -45,11 +45,12 @@ export function buildImagePrompt(input: {
   const chosen = vehicleList[Math.floor(Math.random() * vehicleList.length)];
 
   const scenes = [
-    "The chauffeur holds a small white name board with a client name, greeting a business traveller who is stepping out of the rear passenger door with a carry-on suitcase. The rear door is open. Shot from the rear three-quarter angle so both the car's rear and the chauffeur are visible.",
-    "The chauffeur opens the rear passenger door for a corporate client carrying a briefcase, at a luxury hotel entrance with a canopy visible overhead. Shot from a side angle showing the full length of the car.",
-    "The chauffeur stands at the front of the car with hands clasped, waiting beside the arrivals exit of an airport terminal. Travellers and signage are visible in the background. Shot from a wide angle showing the full scene.",
-    "The chauffeur assists a client with luggage at the boot/trunk of the car, in front of a modern glass office building. Shot from a three-quarter rear angle.",
-    "The chauffeur walks alongside a client toward the parked car on a prestigious London street with period architecture. Both are in motion, natural and candid. Shot from a medium distance.",
+    "AIRPORT PICKUP: The chauffeur holds a small white name board with a client name, greeting a business traveller who is stepping out of the rear passenger door with a carry-on suitcase. The rear door is open. Setting: Heathrow or Gatwick airport terminal forecourt with 'ARRIVALS' signage visible. Shot from the rear three-quarter angle.",
+    "STATION PICKUP: The chauffeur holds a small white name board, waiting for a client at a London train station entrance (e.g. St Pancras, Paddington). The car is parked nearby. Other travellers visible in background. Shot from a wide angle.",
+    "HOTEL DROP-OFF: The chauffeur opens the rear passenger door for a corporate client carrying a briefcase, at a luxury hotel entrance with a canopy visible overhead. NO name board. Shot from a side angle showing the full length of the car.",
+    "OFFICE COLLECTION: The chauffeur assists a client with luggage at the boot/trunk of the car, in front of a modern glass office building in Canary Wharf or The City. NO name board. Shot from a three-quarter rear angle.",
+    "STREET TRANSFER: The chauffeur walks alongside a client toward the parked car on a prestigious London street (Mayfair, Knightsbridge) with period architecture. NO name board. Both are in motion, natural and candid. Shot from a medium distance.",
+    "WAITING: The chauffeur stands beside the car with hands clasped in front, waiting for a client outside a corporate building entrance. NO name board, no client visible. Clean, composed shot. Shot from a three-quarter front angle.",
   ];
   const scene = scenes[Math.floor(Math.random() * scenes.length)];
 
