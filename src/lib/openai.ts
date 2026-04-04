@@ -15,7 +15,10 @@ function bannedList(settings: AppSettings | null): string[] {
   return [];
 }
 
-export async function generateIdeaBrief(settings: AppSettings | null): Promise<{
+export async function generateIdeaBrief(
+  settings: AppSettings | null,
+  recentTopics: string[] = [],
+): Promise<{
   topic: string;
   audience: string;
   content_type: string;
@@ -26,13 +29,18 @@ export async function generateIdeaBrief(settings: AppSettings | null): Promise<{
   const model = process.env.OPENAI_DEFAULT_MODEL?.trim() || "gpt-4o-mini";
   const brandName = settings?.brand_name ?? "Trouv Chauffeurs";
 
+  const recentBlock = recentTopics.length
+    ? `\n\nTHESE TOPICS HAVE ALREADY BEEN USED — do NOT repeat or rephrase any of them. Come up with something completely different:\n${recentTopics.map((t, i) => `${i + 1}. ${t}`).join("\n")}`
+    : "";
+
   const system = `You are a content strategist for ${brandName}, a premium London chauffeur and corporate travel company.
 Generate ONE unique social media content idea. Return JSON only with exactly these keys:
 - topic: a concise content topic (e.g. "Airport transfer reliability", "Corporate event fleet management")
 - audience: the target audience label (e.g. "Executive Assistants", "Corporate Travel Managers", "C-suite executives", "Event planners")
 - content_type: the post format (e.g. "thought leadership", "service spotlight", "client story", "tip", "case study")
 
-Be specific and varied. Avoid repeating common themes. Focus on real operational value for premium corporate clients.
+The topic must be COMPLETELY DIFFERENT from any previously used topics. Do not rephrase, reword, or create slight variations of existing topics. Each idea must cover a genuinely new angle or subject.
+Focus on real operational value for premium corporate clients.${recentBlock}
 Return JSON only — no markdown, no explanation.`;
 
   const client = new OpenAI({ apiKey });
@@ -41,9 +49,9 @@ Return JSON only — no markdown, no explanation.`;
     response_format: { type: "json_object" },
     messages: [
       { role: "system", content: system },
-      { role: "user", content: "Generate a fresh content idea for today." },
+      { role: "user", content: "Generate a completely new and unique content idea that has never been used before." },
     ],
-    temperature: 0.9,
+    temperature: 0.95,
   });
 
   const raw = completion.choices[0]?.message?.content;

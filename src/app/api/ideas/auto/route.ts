@@ -44,10 +44,21 @@ export async function POST() {
     );
   }
 
-  // ── Step 2: OpenAI generates the idea brief ─────────────────────────────
+  // ── Step 2: Fetch recent topics to avoid duplicates ──────────────────────
+  const { data: recentRows } = await supabase
+    .from("content_posts")
+    .select("topic")
+    .order("created_at", { ascending: false })
+    .limit(30);
+
+  const recentTopics = (recentRows ?? [])
+    .map((r) => String((r as Record<string, unknown>).topic ?? "").trim())
+    .filter(Boolean);
+
+  // ── Step 3: OpenAI generates the idea brief ─────────────────────────────
   let brief: { topic: string; audience: string; content_type: string };
   try {
-    brief = await generateIdeaBrief(settings);
+    brief = await generateIdeaBrief(settings, recentTopics);
   } catch (e) {
     return NextResponse.json(
       { error: e instanceof Error ? e.message : "Idea generation failed" },
