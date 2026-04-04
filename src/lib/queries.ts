@@ -92,6 +92,17 @@ export async function listApproved(): Promise<ContentRequest[]> {
   return (data ?? []).map((r) => mapRequest(r as Record<string, unknown>));
 }
 
+export async function listPosted(): Promise<ContentRequest[]> {
+  const { data, error } = await createServiceClient()
+    .from("content_posts")
+    .select("*")
+    .in("status", ["scheduled", "posted"])
+    .order("updated_at", { ascending: false });
+
+  if (error) throw new Error(error.message);
+  return (data ?? []).map((r) => mapRequest(r as Record<string, unknown>));
+}
+
 export async function getRequest(id: string): Promise<ContentRequest | null> {
   const { data, error } = await createServiceClient()
     .from("content_posts")
