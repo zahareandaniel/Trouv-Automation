@@ -100,13 +100,20 @@ export async function POST(request: Request) {
 
   const { output, model } = rev;
 
+  const verdict = String(output.quality_verdict).trim().toLowerCase();
+  const safeVerdict = (["approve", "revise", "reject"] as const).includes(
+    verdict as "approve" | "revise" | "reject",
+  )
+    ? verdict
+    : "revise";
+
   const reviewInsert: Record<string, unknown> = {
     content_request_id: postId,
     generated_content_id: null,
     overall_score: output.overall_score,
     brand_alignment_score: output.brand_alignment_score,
     clarity_score: output.clarity_score,
-    quality_verdict: output.quality_verdict,
+    quality_verdict: safeVerdict,
     problems_found: output.problems_found,
     specific_fixes: output.specific_fixes,
     revised_suggestions: output.revised_suggestions,
@@ -121,7 +128,10 @@ export async function POST(request: Request) {
     .single();
 
   if (revErr) {
-    return NextResponse.json({ error: revErr.message }, { status: 500 });
+    return NextResponse.json(
+      { error: revErr.message, debug_verdict: safeVerdict },
+      { status: 500 },
+    );
   }
 
   const { data: fresh, error: fErr } = await supabase
