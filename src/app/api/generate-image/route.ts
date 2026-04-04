@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import OpenAI from "openai";
+import { GoogleGenAI } from "@google/genai";
 import { getSessionEmail } from "@/lib/auth";
 import { mapRequest } from "@/lib/db-map";
 import { createServiceClient } from "@/lib/supabase/server";
@@ -55,10 +55,10 @@ export async function POST(request: Request) {
   const audience = String(req.audience ?? "");
   const contentType = String(req.content_type ?? "");
 
-  const apiKey = process.env.OPENAI_API_KEY?.trim();
+  const apiKey = process.env.GOOGLE_AI_API_KEY?.trim();
   if (!apiKey) {
     return NextResponse.json(
-      { error: "OPENAI_API_KEY is not configured" },
+      { error: "GOOGLE_AI_API_KEY is not configured" },
       { status: 500 },
     );
   }
@@ -132,36 +132,30 @@ Photographic requirements:
 - Square 1:1 format optimised for Instagram / LinkedIn`;
 
 
-  let imageUrl: string;
+  // Generate image with Google Gemini Nano Banana 2 (gemini-3.1-flash-image-preview)
+  let imageBuffer: Buffer;
   try {
-    const client = new OpenAI({ apiKey });
-    const response = await client.images.generate({
-      model: "dall-e-3",
-      prompt,
-      n: 1,
-      size: "1024x1024",
-      quality: "hd",
-      response_format: "url",
+    const ai = new GoogleGenAI({ apiKey });
+    const response = await ai.models.generateContent({
+      model: "gemini-3.1-flash-image-preview",
+      contents: prompt,
+      config: {
+        responseModalities: ["TEXT", "IMAGE"],
+      },
     });
-    const url = response.data?.[0]?.url;
-    if (!url) throw new Error("No image URL returned");
-    imageUrl = url;
+
+    let base64Data: string | undefined;
+    for (const part of response.candidates?.[0]?.content?.parts ?? []) {
+      if (part.inlineData?.data) {
+        base64Data = part.inlineData.data;
+        break;
+      }
+    }
+    if (!base64Data) throw new Error("No image data returned from Gemini");
+    imageBuffer = Buffer.from(base64Data, "base64");
   } catch (e) {
     return NextResponse.json(
       { error: e instanceof Error ? e.message : "Image generation failed" },
-      { status: 502 },
-    );
-  }
-
-  // Download the image from OpenAI (their URLs expire in ~1hr)
-  let imageBuffer: ArrayBuffer;
-  try {
-    const imgRes = await fetch(imageUrl);
-    if (!imgRes.ok) throw new Error(`Failed to download image: ${imgRes.status}`);
-    imageBuffer = await imgRes.arrayBuffer();
-  } catch (e) {
-    return NextResponse.json(
-      { error: e instanceof Error ? e.message : "Failed to download image" },
       { status: 502 },
     );
   }
