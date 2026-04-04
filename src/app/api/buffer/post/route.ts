@@ -76,8 +76,14 @@ export async function POST(request: Request) {
   }
 
   const channelId = envChannelId(platform as TargetPlatform);
+  const imageUrl =
+    String(
+      (reqRow as Record<string, unknown>).instagram_image_url ??
+      (reqRow as Record<string, unknown>).linkedin_image_url ??
+      "",
+    ).trim() || null;
 
-  const result = await queueBufferPost(platform as TargetPlatform, text);
+  const result = await queueBufferPost(platform as TargetPlatform, text, imageUrl);
 
   const logBase: Record<string, unknown> = {
     content_request_id: contentRequestId,

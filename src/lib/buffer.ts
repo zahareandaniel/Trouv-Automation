@@ -47,6 +47,7 @@ type Gql = {
 export async function queueBufferPost(
   platform: TargetPlatform,
   text: string,
+  imageUrl?: string | null,
 ): Promise<BufferResult> {
   const token = process.env.BUFFER_ACCESS_TOKEN?.trim();
   if (!token) {
@@ -68,11 +69,24 @@ export async function queueBufferPost(
     };
   }
 
-  const input = {
+  // Instagram requires a post type and at least one image
+  const metadata =
+    platform === "instagram"
+      ? { instagram: { type: "post", shouldShareToFeed: true } }
+      : undefined;
+
+  const assets =
+    imageUrl
+      ? { images: [{ url: imageUrl }] }
+      : undefined;
+
+  const input: Record<string, unknown> = {
     channelId: cid,
     text,
     schedulingType: "automatic",
     mode: "addToQueue",
+    ...(metadata && { metadata }),
+    ...(assets && { assets }),
   };
 
   let res: Response;
