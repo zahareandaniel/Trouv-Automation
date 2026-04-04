@@ -1,9 +1,16 @@
 import sharp from "sharp";
 
+const CARD_W = 1080;
+const CARD_H = 1350;
+const PHOTO_H = 810;
+const TEXT_H = CARD_H - PHOTO_H;
+const PAD = 60;
+const TEXT_AREA_W = CARD_W - PAD * 2;
+
 /**
  * Takes a square AI-generated photo and composites it into a portrait card
- * (1080×1350) with the photo on top and a text panel below, similar to a
- * blog article card.
+ * (1080×1350) with the photo on top and a text panel below.
+ * Uses sharp's Pango text input (works on Vercel/serverless — no system fonts needed).
  */
 export async function composeCardImage(
   photoBuffer: Buffer,
@@ -13,88 +20,97 @@ export async function composeCardImage(
     hookLine: string;
   },
 ): Promise<Buffer> {
-  const CARD_W = 1080;
-  const CARD_H = 1350;
-  const PHOTO_H = 810; // 60% for photo
-  const TEXT_H = CARD_H - PHOTO_H; // 40% for text panel
-
   const contentType = opts.contentType.toUpperCase();
   const topic = opts.topic;
-  const hook = opts.hookLine.length > 140 ? opts.hookLine.slice(0, 137) + "…" : opts.hookLine;
+  const hook =
+    opts.hookLine.length > 160
+      ? opts.hookLine.slice(0, 157) + "…"
+      : opts.hookLine;
 
-  // Resize the AI photo to fit the top portion
   const resizedPhoto = await sharp(photoBuffer)
     .resize(CARD_W, PHOTO_H, { fit: "cover", position: "centre" })
     .toBuffer();
 
-  // Build the text panel as SVG for sharp to render
-  const escapeSvg = (s: string) =>
-    s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  const esc = (s: string) =>
+    s
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
 
-  const wrappedTopic = wrapText(topic, 32);
-  const wrappedHook = wrapText(hook, 52);
+  // Render each text block with sharp's built-in Pango text engine
+  const labelImg = await renderPangoText(
+    `<span letter_spacing="4000" weight="bold" foreground="#999999">${esc(contentType)}</span>`,
+    { width: TEXT_AREA_W, dpi: 150, fontSize: 16 },
+  );
 
-  const topicLines = wrappedTopic
-    .map(
-      (line, i) =>
-        `<text x="60" y="${190 + i * 52}" font-family="Georgia, 'Times New Roman', serif" font-size="42" font-weight="bold" fill="#1a1a1a">${escapeSvg(line)}</text>`,
-    )
-    .join("\n");
+  const topicImg = await renderPangoText(
+    `<span weight="bold" foreground="#1a1a1a">${esc(topic)}</span>`,
+    { width: TEXT_AREA_W, dpi: 150, fontSize: 40 },
+  );
 
-  const hookStartY = 190 + wrappedTopic.length * 52 + 30;
-  const hookLines = wrappedHook
-    .map(
-      (line, i) =>
-        `<text x="60" y="${hookStartY + i * 30}" font-family="Helvetica, Arial, sans-serif" font-size="22" fill="#666666">${escapeSvg(line)}</text>`,
-    )
-    .join("\n");
+  const hookImg = hook
+    ? await renderPangoText(
+        `<span foreground="#666666">${esc(hook)}</span>`,
+        { width: TEXT_AREA_W, dpi: 150, fontSize: 22 },
+      )
+    : null;
 
-  const textSvg = `<svg width="${CARD_W}" height="${TEXT_H}" xmlns="http://www.w3.org/2000/svg">
-    <rect width="${CARD_W}" height="${TEXT_H}" fill="#ffffff"/>
-    <text x="60" y="60" font-family="Helvetica, Arial, sans-serif" font-size="16" font-weight="bold" letter-spacing="3" fill="#999999">${escapeSvg(contentType)}</text>
-    <line x1="60" y1="80" x2="${60 + contentType.length * 11}" y2="80" stroke="#999999" stroke-width="1"/>
-    ${topicLines}
-    ${hookLines}
-    <text x="60" y="${TEXT_H - 40}" font-family="Helvetica, Arial, sans-serif" font-size="14" fill="#bbbbbb">trouv.co.uk</text>
-  </svg>`;
+  const brandImg = await renderPangoText(
+    `<span foreground="#bbbbbb">trouv.co.uk</span>`,
+    { width: TEXT_AREA_W, dpi: 150, fontSize: 14 },
+  );
 
-  const textPanel = await sharp(Buffer.from(textSvg))
-    .resize(CARD_W, TEXT_H)
-    .png()
-    .toBuffer();
+  // Stack text elements vertically with spacing
+  const layers: sharp.OverlayOptions[] = [
+    { input: resizedPhoto, top: 0, left: 0 },
+  ];
 
-  // Compose: photo on top, text panel below
+  let curY = PHOTO_H + 40;
+
+  const labelMeta = await sharp(labelImg).metadata();
+  layers.push({ input: labelImg, top: curY, left: PAD });
+  curY += (labelMeta.height ?? 20) + 24;
+
+  const topicMeta = await sharp(topicImg).metadata();
+  layers.push({ input: topicImg, top: curY, left: PAD });
+  curY += (topicMeta.height ?? 40) + 20;
+
+  if (hookImg) {
+    layers.push({ input: hookImg, top: curY, left: PAD });
+  }
+
+  // Brand at bottom-left
+  layers.push({ input: brandImg, top: CARD_H - 50, left: PAD });
+
   const card = await sharp({
     create: {
       width: CARD_W,
       height: CARD_H,
-      channels: 3,
-      background: { r: 255, g: 255, b: 255 },
+      channels: 4,
+      background: { r: 255, g: 255, b: 255, alpha: 1 },
     },
   })
-    .composite([
-      { input: resizedPhoto, top: 0, left: 0 },
-      { input: textPanel, top: PHOTO_H, left: 0 },
-    ])
+    .composite(layers)
     .png()
     .toBuffer();
 
   return card;
 }
 
-function wrapText(text: string, maxChars: number): string[] {
-  const words = text.split(" ");
-  const lines: string[] = [];
-  let current = "";
-
-  for (const word of words) {
-    if (current.length + word.length + 1 > maxChars) {
-      if (current) lines.push(current);
-      current = word;
-    } else {
-      current = current ? `${current} ${word}` : word;
-    }
-  }
-  if (current) lines.push(current);
-  return lines;
+async function renderPangoText(
+  markup: string,
+  opts: { width: number; dpi: number; fontSize: number },
+): Promise<Buffer> {
+  return sharp({
+    text: {
+      text: `<span size="${opts.fontSize * 1024}">${markup}</span>`,
+      font: "sans",
+      rgba: true,
+      width: opts.width,
+      dpi: opts.dpi,
+    },
+  })
+    .png()
+    .toBuffer();
 }
