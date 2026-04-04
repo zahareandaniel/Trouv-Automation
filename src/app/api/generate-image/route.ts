@@ -63,13 +63,30 @@ export async function POST(request: Request) {
     );
   }
 
-  const prompt = `Professional corporate photography style social media image for a premium London chauffeur company called Trouv Chauffeurs.
+  const vehicleList = [
+    "black Mercedes-Benz S-Class W223",
+    "black BMW i7",
+    "black Mercedes-Benz V-Class",
+    "black Range Rover P460",
+  ];
+  const vehicle = vehicleList[Math.floor(Math.random() * vehicleList.length)];
+
+  const prompt = `Photorealistic professional automotive photography for a premium London chauffeur company called Trouv Chauffeurs. The image must feature a ${vehicle} as the focal point.
 
 Topic: ${topic}
 Audience: ${audience}
 Content type: ${contentType}
 
-Visual style: clean, minimal, premium, dark luxury aesthetic. No text overlays. Cinematic lighting. Could show: executive travel, airport arrivals, luxury vehicles, professional chauffeurs, city environments, corporate settings. Square format optimised for social media.`;
+Requirements:
+- The vehicle must be a ${vehicle} — correct body shape, proportions, and brand details
+- Exterior colour: gloss black only
+- Setting: premium urban environment — London streets, Canary Wharf, Mayfair, City of London, Heathrow terminal exterior, or a hotel entrance at night
+- Lighting: cinematic, dramatic, wet road reflections, ambient city glow
+- Style: editorial automotive photography, sharp focus on the car, shallow depth of field background
+- A professional chauffeur in a dark suit may be present but optional
+- No text, logos, watermarks, or overlays of any kind
+- Square 1:1 composition optimised for social media`;
+
 
   let imageUrl: string;
   try {
@@ -79,7 +96,7 @@ Visual style: clean, minimal, premium, dark luxury aesthetic. No text overlays. 
       prompt,
       n: 1,
       size: "1024x1024",
-      quality: "standard",
+      quality: "hd",
       response_format: "url",
     });
     const url = response.data?.[0]?.url;
