@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { AutoIdeaButton } from "@/components/auto-idea-button";
 import { PostDeleteButton } from "@/components/post-delete-button";
+import { PostNowButton } from "@/components/post-now-button";
 import { StatusBadge } from "@/components/status-badge";
 import { STATUS_IDEA } from "@/lib/content-posts/status";
 import { getDashboardStats, listRecentRequests } from "@/lib/queries";
@@ -122,7 +123,10 @@ export default async function DashboardPage() {
                       {fmt(r.updated_at)}
                     </td>
                     <td className="px-4 py-3">
-                      <PostDeleteButton id={r.id} />
+                      <div className="flex items-center gap-3">
+                        <PostNowButton id={r.id} />
+                        <PostDeleteButton id={r.id} />
+                      </div>
                     </td>
                   </tr>
                 ))

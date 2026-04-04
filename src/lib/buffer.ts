@@ -48,6 +48,7 @@ export async function queueBufferPost(
   platform: TargetPlatform,
   text: string,
   imageUrl?: string | null,
+  shareNow = false,
 ): Promise<BufferResult> {
   const token = process.env.BUFFER_ACCESS_TOKEN?.trim();
   if (!token) {
@@ -84,7 +85,7 @@ export async function queueBufferPost(
     channelId: cid,
     text,
     schedulingType: "automatic",
-    mode: "addToQueue",
+    mode: shareNow ? "shareNow" : "addToQueue",
     ...(metadata && { metadata }),
     ...(assets && { assets }),
   };
