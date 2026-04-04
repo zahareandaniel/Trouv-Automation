@@ -75,6 +75,7 @@ Photographic requirements:
 - Lighting: natural daylight or overcast London light, editorial and clean, not overly dramatic
 - Style: lifestyle editorial photography — the kind you'd see in a premium service company's blog or brochure. Natural, authentic, not over-stylised
 - Camera angle: three-quarter front view of the vehicle with the chauffeur visible, shot at eye level
-- STRICTLY NO text, logos, number plates, watermarks, or any graphic overlays
+- The vehicle's number plate must read "TROUV" in clear capital letters — this is the only text allowed in the image
+- No other text, logos, watermarks, or graphic overlays
 - Square 1:1 format optimised for Instagram / LinkedIn`;
 }
