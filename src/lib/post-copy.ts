@@ -1,3 +1,4 @@
+import { STATUS_DRAFT, STATUS_IDEA } from "@/lib/content-posts/status";
 import type { ContentRequest } from "@/lib/types";
 
 /** True if the post row has any non-empty generated copy fields. */
@@ -21,7 +22,7 @@ export function postHasGeneratedCopy(p: ContentRequest): boolean {
  * (before enum migration, briefs were often `draft`).
  */
 export function isContentPostBriefStage(p: ContentRequest): boolean {
-  if (p.status === "idea") return true;
-  if (p.status === "draft" && !postHasGeneratedCopy(p)) return true;
+  if (p.status === STATUS_IDEA) return true;
+  if (p.status === STATUS_DRAFT && !postHasGeneratedCopy(p)) return true;
   return false;
 }

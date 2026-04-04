@@ -3,6 +3,11 @@ import { notFound, redirect } from "next/navigation";
 import { DraftDetailClient } from "@/components/draft-detail-client";
 import { getLatestReview, getRequest } from "@/lib/queries";
 import {
+  STATUS_APPROVED,
+  STATUS_POSTED,
+  STATUS_SCHEDULED,
+} from "@/lib/content-posts/status";
+import {
   isContentPostBriefStage,
   postHasGeneratedCopy,
 } from "@/lib/post-copy";
@@ -21,9 +26,9 @@ export default async function DraftDetailPage({
   }
 
   if (
-    request.status === "approved" ||
-    request.status === "scheduled" ||
-    request.status === "posted"
+    request.status === STATUS_APPROVED ||
+    request.status === STATUS_SCHEDULED ||
+    request.status === STATUS_POSTED
   ) {
     return (
       <div>

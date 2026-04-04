@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
 import { StatusBadge } from "@/components/status-badge";
+import { STATUS_DRAFT, STATUS_FAILED } from "@/lib/content-posts/status";
 import type { ContentRequest, ContentReview } from "@/lib/types";
 
 function Col({
@@ -46,11 +47,13 @@ export function DraftDetailClient({
   const verdict = String(latestReview?.quality_verdict ?? "").toLowerCase();
   /** Regenerate / run review after a publish failure. */
   const pipelineEdit =
-    request.status === "draft" || request.status === "failed";
+    request.status === STATUS_DRAFT || request.status === STATUS_FAILED;
 
   const canApprove =
-    request.status === "draft" && verdict === "approve" && latestReview != null;
-  const canReject = request.status === "draft" && latestReview != null;
+    request.status === STATUS_DRAFT &&
+    verdict === "approve" &&
+    latestReview != null;
+  const canReject = request.status === STATUS_DRAFT && latestReview != null;
 
   async function post(url: string, method = "POST", json?: object) {
     setBusy(true);

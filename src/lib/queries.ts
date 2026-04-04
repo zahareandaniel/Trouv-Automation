@@ -5,6 +5,7 @@ import {
   DB_STATUS_IDEAS_LIST,
   DB_STATUS_SCHEDULED,
 } from "@/lib/content-posts/db-filters";
+import { STATUS_APPROVED, STATUS_DRAFT } from "@/lib/content-posts/status";
 import { mapRequest, mapReview, mapSettings } from "@/lib/db-map";
 import {
   isContentPostBriefStage,
@@ -75,29 +76,16 @@ export async function listDraftsPipeline(): Promise<ContentRequest[]> {
     .order("updated_at", { ascending: false });
 
   if (error) throw new Error(error.message);
-  const out: ContentRequest[] = [];
-  for (const row of data ?? []) {
-    const rec = row as Record<string, unknown>;
-    const raw = String(rec.status ?? "");
-    const m = mapRequest(rec);
-    if (raw === "generated" || raw === "reviewed") {
-      out.push(m);
-      continue;
-    }
-    if (raw === "failed") {
-      if (postHasGeneratedCopy(m)) out.push(m);
-      continue;
-    }
-    if (raw === "draft" && postHasGeneratedCopy(m)) out.push(m);
-  }
-  return out;
+  return (data ?? [])
+    .map((r) => mapRequest(r as Record<string, unknown>))
+    .filter((m) => postHasGeneratedCopy(m));
 }
 
 export async function listApproved(): Promise<ContentRequest[]> {
   const { data, error } = await createServiceClient()
     .from("content_posts")
     .select("*")
-    .eq("status", "approved")
+    .eq("status", STATUS_APPROVED)
     .order("updated_at", { ascending: false });
 
   if (error) throw new Error(error.message);

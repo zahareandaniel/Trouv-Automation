@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { getSessionEmail } from "@/lib/auth";
-import { parseDbContentPostStatus } from "@/lib/content-posts/status";
+import {
+  parseDbContentPostStatus,
+  STATUS_DRAFT,
+} from "@/lib/content-posts/status";
 import { mapRequest } from "@/lib/db-map";
 import { createServiceClient } from "@/lib/supabase/server";
 
@@ -35,7 +38,7 @@ export async function PATCH(_request: Request, ctx: Ctx) {
   const normalized = parseDbContentPostStatus(
     (req as Record<string, unknown>).status,
   );
-  if (normalized !== "draft") {
+  if (normalized !== STATUS_DRAFT) {
     return NextResponse.json(
       { error: "Reject only applies to draft-stage posts with copy" },
       { status: 400 },

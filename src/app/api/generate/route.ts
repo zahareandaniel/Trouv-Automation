@@ -56,7 +56,7 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         error:
-          "Generation not allowed for this status (allowed: idea, draft, or legacy generated/reviewed)",
+          "Generation not allowed for this status (allowed: idea, draft, or failed)",
       },
       { status: 400 },
     );

@@ -63,3 +63,6 @@ export const STATUS_DRAFT: ContentPostStatus = "draft";
 
 export const STATUS_SCHEDULED: ContentPostStatus = "scheduled";
 export const STATUS_POSTED: ContentPostStatus = "posted";
+export const STATUS_APPROVED: ContentPostStatus = "approved";
+export const STATUS_FAILED: ContentPostStatus = "failed";
+

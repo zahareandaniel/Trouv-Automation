@@ -24,7 +24,7 @@ UPDATE public.content_posts SET status = 'posted' WHERE status::text = 'publishe
 UPDATE public.content_posts SET status = 'idea' WHERE status::text = 'draft' AND coalesce(trim(linkedin_post), '') = '' AND coalesce(trim(instagram_caption), '') = '' AND coalesce(trim(x_post), '') = '';
 ```
 
-After this, brief-only rows are `idea`, copy pipeline rows are `draft`, etc. Queries in `src/lib/content-posts/db-filters.ts` still accept legacy raw values until you clean data.
+After this, brief-only rows are `idea`, copy pipeline rows are `draft`, etc. All Supabase `.in()` queries now use only valid enum values — legacy values are **not** included in query filters (Postgres rejects non-existent enum literals in comparisons). The `parseDbContentPostStatus` function still maps legacy values defensively if they appear in `select("*")` results.
 
 ## Setup
 
@@ -112,7 +112,7 @@ src/
 | `/ideas` | Brief stage: `idea` or legacy `draft` without copy |
 | `/ideas/new` | Create post (`status = idea`) |
 | `/ideas/[id]` | Edit/delete while brief stage only |
-| `/drafts` | `draft` with copy, or legacy `generated`/`reviewed`, or `failed` with copy |
+| `/drafts` | `draft` or `failed` with generated copy |
 | `/drafts/[id]` | Copy + review / approve / reject / regenerate |
 | `/approved` | `status = approved` → per-platform Buffer |
 | `/posted` | Placeholder |

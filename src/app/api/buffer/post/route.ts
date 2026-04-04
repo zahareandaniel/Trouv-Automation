@@ -1,7 +1,12 @@
 import { NextResponse } from "next/server";
 import { getSessionEmail } from "@/lib/auth";
 import { DB_STATUS_BUFFER_DONE } from "@/lib/content-posts/db-filters";
-import { STATUS_POSTED, STATUS_SCHEDULED } from "@/lib/content-posts/status";
+import {
+  STATUS_APPROVED,
+  STATUS_FAILED,
+  STATUS_POSTED,
+  STATUS_SCHEDULED,
+} from "@/lib/content-posts/status";
 import { queueBufferPost } from "@/lib/buffer";
 import { mapRequest } from "@/lib/db-map";
 import { postHasGeneratedCopy } from "@/lib/post-copy";
@@ -10,9 +15,7 @@ import { createServiceClient } from "@/lib/supabase/server";
 import type { TargetPlatform } from "@/lib/types";
 import { bufferPostBodySchema } from "@/lib/validations";
 
-function statusAfterBufferSuccess(raw: string): typeof STATUS_SCHEDULED | typeof STATUS_POSTED {
-  if (raw === "posted" || raw === "published") return STATUS_POSTED;
-  if (raw === "scheduled" || raw === "queued") return STATUS_SCHEDULED;
+function statusAfterBufferSuccess(_raw: string): typeof STATUS_SCHEDULED {
   return STATUS_SCHEDULED;
 }
 
@@ -57,7 +60,7 @@ export async function POST(request: Request) {
   if (re) return NextResponse.json({ error: re.message }, { status: 500 });
   if (!reqRow) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  if ((reqRow as Record<string, unknown>).status !== "approved") {
+  if ((reqRow as Record<string, unknown>).status !== STATUS_APPROVED) {
     return NextResponse.json(
       { error: "Only approved posts can be queued to Buffer" },
       { status: 403 },
@@ -129,7 +132,7 @@ export async function POST(request: Request) {
   if (!DB_STATUS_BUFFER_DONE.has(currentStatus)) {
     await supabase
       .from("content_posts")
-      .update({ status: "failed" })
+      .update({ status: STATUS_FAILED })
       .eq("id", contentRequestId);
   }
 

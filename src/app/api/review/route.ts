@@ -56,7 +56,7 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         error:
-          "Review requires draft-stage content (draft, or legacy generated/reviewed)",
+          "Review requires draft-stage content (draft or failed)",
       },
       { status: 400 },
     );

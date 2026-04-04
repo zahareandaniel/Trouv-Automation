@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { StatusBadge } from "@/components/status-badge";
+import { STATUS_IDEA } from "@/lib/content-posts/status";
 import { getDashboardStats, listRecentRequests } from "@/lib/queries";
 import { hintForFetchFailure } from "@/lib/supabase/validate-url";
 
@@ -99,7 +100,7 @@ export default async function DashboardPage() {
                     <td className="px-4 py-3">
                       <Link
                         href={
-                          r.status === "idea"
+                          r.status === STATUS_IDEA
                             ? `/ideas/${r.id}`
                             : `/drafts/${r.id}`
                         }
