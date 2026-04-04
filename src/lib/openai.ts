@@ -1,3 +1,4 @@
+import Anthropic from "@anthropic-ai/sdk";
 import OpenAI from "openai";
 import type { AppSettings } from "@/lib/types";
 import type { TargetPlatform } from "@/lib/types";
@@ -94,11 +95,11 @@ export async function reviewGeneratedCopy(input: {
   generated: GenerationOutput;
   settings: AppSettings | null;
 }): Promise<{ output: ReviewOutput; model: string }> {
-  const apiKey = process.env.OPENAI_API_KEY?.trim();
-  if (!apiKey) throw new Error("OPENAI_API_KEY is not configured");
+  const apiKey = process.env.ANTHROPIC_API_KEY?.trim();
+  if (!apiKey) throw new Error("ANTHROPIC_API_KEY is not configured");
 
   const model =
-    process.env.OPENAI_DEFAULT_MODEL?.trim() || "gpt-4o-mini";
+    process.env.ANTHROPIC_REVIEW_MODEL?.trim() || "claude-sonnet-4-20250514";
 
   const strict = input.settings?.review_strictness ?? 50;
   const banned = bannedList(input.settings);
@@ -116,7 +117,7 @@ Banned phrases: ${banned.length ? banned.join("; ") : "none"}
 Score the draft copy (0-100) for overall quality, brand alignment, and clarity.
 quality_verdict must be exactly one of: approve, revise, reject
 
-Return JSON only:
+You MUST respond with valid JSON only — no markdown, no code fences, no explanation.
 {
   "overall_score": number,
   "brand_alignment_score": number,
@@ -127,7 +128,7 @@ Return JSON only:
   "revised_suggestions": { "linkedin": string, "instagram": string, "x": string }
 }`;
 
-  const user = JSON.stringify({
+  const userMsg = JSON.stringify({
     brief: {
       topic: input.topic,
       audience: input.audience,
@@ -136,25 +137,23 @@ Return JSON only:
     draft: input.generated,
   });
 
-  const client = new OpenAI({ apiKey });
-  const completion = await client.chat.completions.create({
+  const client = new Anthropic({ apiKey });
+  const message = await client.messages.create({
     model,
-    response_format: { type: "json_object" },
-    messages: [
-      { role: "system", content: system },
-      { role: "user", content: user },
-    ],
-    temperature: 0.3,
+    max_tokens: 2048,
+    system,
+    messages: [{ role: "user", content: userMsg }],
   });
 
-  const raw = completion.choices[0]?.message?.content;
-  if (!raw) throw new Error("Empty OpenAI review response");
+  const textBlock = message.content.find((b) => b.type === "text");
+  const raw = textBlock?.text;
+  if (!raw) throw new Error("Empty Claude review response");
 
   let parsed: unknown;
   try {
     parsed = JSON.parse(raw);
   } catch {
-    throw new Error("Review response was not valid JSON");
+    throw new Error("Claude review response was not valid JSON");
   }
 
   const out = reviewOutputSchema.safeParse(parsed);
