@@ -83,6 +83,7 @@ VEHICLE (in the photograph):
 - Body style: ${chosen.body}
 - ${chosen.visualDescription}
 - ${chosen.notThisVehicle}
+- The vehicle MUST be BLACK colour only — gloss black bodywork, black paint. No white, silver, grey, blue, or any other colour vehicle. ONLY black.
 - Number plate reads "TROUV"
 
 The photograph must be STRICTLY BLACK AND WHITE / MONOCHROME — pure greyscale.
