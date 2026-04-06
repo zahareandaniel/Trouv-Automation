@@ -6,7 +6,6 @@ import sharp from "sharp";
 
 const CARD_W = 1080;
 const CARD_H = 1350;
-const PHOTO_H = 810;
 
 let fontCache: { regular: Buffer; bold: Buffer } | null = null;
 
@@ -43,9 +42,12 @@ async function loadFonts() {
 }
 
 /**
- * Composites an AI photo into a portrait card (1080×1350)
- * with the photo on top and a text panel below.
- * Uses satori + resvg for font rendering (works on Vercel).
+ * Composites an AI photo into a branded card (1080×1350):
+ *   - Top panel:  brand name + content type + topic headline
+ *   - Middle:     AI-generated monochrome photo
+ *   - Bottom:     hook / key message + bullet points + website
+ *
+ * Uses satori + resvg (works on Vercel serverless).
  */
 export async function composeCardImage(
   photoBuffer: Buffer,
@@ -60,9 +62,14 @@ export async function composeCardImage(
   const contentType = opts.contentType.toUpperCase();
   const topic = opts.topic;
   const hook =
-    opts.hookLine.length > 180
-      ? opts.hookLine.slice(0, 177) + "…"
+    opts.hookLine.length > 200
+      ? opts.hookLine.slice(0, 197) + "…"
       : opts.hookLine;
+
+  // Split hook into bullet points if it contains sentences
+  const bullets = splitIntoBullets(hook);
+
+  const PHOTO_H = 620;
 
   const resizedPhoto = await sharp(photoBuffer)
     .resize(CARD_W, PHOTO_H, { fit: "cover", position: "centre" })
@@ -80,9 +87,88 @@ export async function composeCardImage(
         flexDirection: "column",
         width: CARD_W,
         height: CARD_H,
-        backgroundColor: "#ffffff",
+        backgroundColor: "#111111",
+        color: "#ffffff",
+        fontFamily: "Inter",
       },
       children: [
+        // ── Top panel: brand + headline ──────────────────────────
+        {
+          type: "div",
+          props: {
+            style: {
+              display: "flex",
+              flexDirection: "column",
+              padding: "44px 56px 32px 56px",
+            },
+            children: [
+              {
+                type: "div",
+                props: {
+                  style: {
+                    display: "flex",
+                    alignItems: "center",
+                    marginBottom: 20,
+                  },
+                  children: [
+                    {
+                      type: "div",
+                      props: {
+                        style: {
+                          fontSize: 20,
+                          fontWeight: 700,
+                          letterSpacing: "0.15em",
+                          color: "#ffffff",
+                        },
+                        children: "TROUV",
+                      },
+                    },
+                    {
+                      type: "div",
+                      props: {
+                        style: {
+                          fontSize: 14,
+                          fontWeight: 400,
+                          color: "#888888",
+                          marginLeft: 16,
+                          letterSpacing: "0.08em",
+                        },
+                        children: "CHAUFFEURS",
+                      },
+                    },
+                  ],
+                },
+              },
+              {
+                type: "div",
+                props: {
+                  style: {
+                    fontSize: 44,
+                    fontWeight: 700,
+                    lineHeight: 1.15,
+                    color: "#ffffff",
+                    marginBottom: 10,
+                  },
+                  children: topic,
+                },
+              },
+              {
+                type: "div",
+                props: {
+                  style: {
+                    fontSize: 16,
+                    fontWeight: 400,
+                    color: "#999999",
+                    letterSpacing: "0.15em",
+                  },
+                  children: contentType,
+                },
+              },
+            ],
+          },
+        },
+
+        // ── Photo ────────────────────────────────────────────────
         {
           type: "img",
           props: {
@@ -92,69 +178,79 @@ export async function composeCardImage(
             style: { objectFit: "cover" },
           },
         },
+
+        // ── Bottom panel: bullets + website ──────────────────────
         {
           type: "div",
           props: {
             style: {
               display: "flex",
               flexDirection: "column",
-              padding: "40px 60px",
+              padding: "28px 56px 0 56px",
               flex: 1,
               justifyContent: "flex-start",
             },
-            children: [
-              {
-                type: "div",
-                props: {
-                  style: {
-                    fontSize: 16,
-                    fontWeight: 700,
-                    color: "#999999",
-                    letterSpacing: "0.2em",
-                    marginBottom: 24,
-                  },
-                  children: contentType,
+            children: bullets.map((b) => ({
+              type: "div",
+              props: {
+                style: {
+                  display: "flex",
+                  alignItems: "flex-start",
+                  marginBottom: 10,
                 },
-              },
-              {
-                type: "div",
-                props: {
-                  style: {
-                    fontSize: 42,
-                    fontWeight: 700,
-                    color: "#1a1a1a",
-                    lineHeight: 1.2,
-                    marginBottom: 20,
+                children: [
+                  {
+                    type: "div",
+                    props: {
+                      style: {
+                        fontSize: 20,
+                        color: "#ffffff",
+                        marginRight: 14,
+                        marginTop: 2,
+                      },
+                      children: "•",
+                    },
                   },
-                  children: topic,
-                },
-              },
-              {
-                type: "div",
-                props: {
-                  style: {
-                    fontSize: 22,
-                    fontWeight: 400,
-                    color: "#666666",
-                    lineHeight: 1.5,
+                  {
+                    type: "div",
+                    props: {
+                      style: {
+                        fontSize: 20,
+                        fontWeight: 400,
+                        color: "#cccccc",
+                        lineHeight: 1.4,
+                        flex: 1,
+                      },
+                      children: b,
+                    },
                   },
-                  children: hook,
-                },
+                ],
               },
-            ],
+            })),
           },
         },
+
+        // ── Footer: website ──────────────────────────────────────
         {
           type: "div",
           props: {
             style: {
-              position: "absolute",
-              bottom: 30,
-              left: 60,
-              fontSize: 14,
-              color: "#bbbbbb",
+              display: "flex",
+              justifyContent: "center",
+              padding: "0 0 32px 0",
             },
-            children: "trouv.co.uk",
+            children: {
+              type: "div",
+              props: {
+                style: {
+                  fontSize: 15,
+                  fontWeight: 400,
+                  color: "#666666",
+                  letterSpacing: "0.1em",
+                },
+                children: "www.trouv.co.uk",
+              },
+            },
           },
         },
       ],
@@ -176,4 +272,18 @@ export async function composeCardImage(
   const pngData = resvg.render();
 
   return Buffer.from(pngData.asPng());
+}
+
+function splitIntoBullets(text: string): string[] {
+  const sentences = text
+    .split(/(?<=[.!?])\s+/)
+    .map((s) => s.trim())
+    .filter((s) => s.length > 5);
+
+  if (sentences.length >= 2) return sentences.slice(0, 4);
+
+  const chunks = text.split(/[,;]/).map((s) => s.trim()).filter(Boolean);
+  if (chunks.length >= 2) return chunks.slice(0, 4);
+
+  return [text];
 }

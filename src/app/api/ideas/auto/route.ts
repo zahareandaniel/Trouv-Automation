@@ -222,49 +222,44 @@ export async function POST() {
         const imageBuffer = Buffer.from(base64Data, "base64");
         const ts = Date.now();
 
-        // Square photo for LinkedIn / X
-        const squareFileName = `${postId}-${ts}.png`;
-        const { error: sqErr } = await supabase.storage
-          .from("post-images")
-          .upload(squareFileName, imageBuffer, { contentType: "image/png", upsert: true });
-
-        const squareUrl = sqErr
-          ? null
-          : supabase.storage.from("post-images").getPublicUrl(squareFileName).data.publicUrl;
-
-        // Card image for Instagram (photo + text underneath)
+        // Build branded card for all platforms
         const updRow = updPost as Record<string, unknown>;
         const hookLine =
-          String(updRow.instagram_hook ?? updRow.linkedin_hook ?? "").trim() ||
-          String(updRow.instagram_caption ?? updRow.linkedin_post ?? "").slice(0, 120);
-        let cardUrl: string | null = null;
+          String(updRow.linkedin_hook ?? updRow.instagram_hook ?? "").trim() ||
+          String(updRow.linkedin_post ?? updRow.instagram_caption ?? "").slice(0, 200);
+
+        let cardBuf: Buffer = imageBuffer;
         try {
-          const cardBuf = await composeCardImage(imageBuffer, {
+          cardBuf = await composeCardImage(imageBuffer, {
             contentType: brief.content_type,
             topic: brief.topic,
             hookLine,
           });
-          const cardFileName = `${postId}-${ts}-card.png`;
-          const { error: cardErr } = await supabase.storage
-            .from("post-images")
-            .upload(cardFileName, cardBuf, { contentType: "image/png", upsert: true });
-          if (!cardErr) {
-            cardUrl = supabase.storage.from("post-images").getPublicUrl(cardFileName).data.publicUrl;
-          }
         } catch (cardErr) {
           console.error("Card compositing failed in auto pipeline:", cardErr);
         }
 
-        imageUrl = squareUrl;
+        const cardFileName = `${postId}-${ts}-card.png`;
+        const { error: upErr2 } = await supabase.storage
+          .from("post-images")
+          .upload(cardFileName, cardBuf, { contentType: "image/png", upsert: true });
 
-        await supabase
-          .from("content_posts")
-          .update({
-            linkedin_image_url: squareUrl ?? null,
-            instagram_image_url: cardUrl ?? squareUrl ?? null,
-            x_image_url: squareUrl ?? null,
-          })
-          .eq("id", postId);
+        if (!upErr2) {
+          const cardUrl = supabase.storage
+            .from("post-images")
+            .getPublicUrl(cardFileName).data.publicUrl;
+
+          imageUrl = cardUrl;
+
+          await supabase
+            .from("content_posts")
+            .update({
+              linkedin_image_url: cardUrl,
+              instagram_image_url: cardUrl,
+              x_image_url: cardUrl,
+            })
+            .eq("id", postId);
+        }
       }
     } catch {
       // Image generation is non-fatal — continue without image

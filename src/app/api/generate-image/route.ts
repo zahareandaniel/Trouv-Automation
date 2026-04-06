@@ -96,10 +96,10 @@ export async function POST(request: Request) {
     );
   }
 
-  // Build a card version for Instagram (photo + text panel below)
+  // Build branded card (photo + headline + bullets) for all platforms
   const hookLine =
-    String(req.instagram_hook ?? req.linkedin_hook ?? "").trim() ||
-    String(req.instagram_caption ?? req.linkedin_post ?? "").slice(0, 120);
+    String(req.linkedin_hook ?? req.instagram_hook ?? "").trim() ||
+    String(req.linkedin_post ?? req.instagram_caption ?? "").slice(0, 200);
 
   let cardBuffer: Buffer;
   try {
@@ -109,31 +109,11 @@ export async function POST(request: Request) {
       hookLine,
     });
   } catch (cardErr) {
-    console.error("Card compositing failed, using square photo:", cardErr);
+    console.error("Card compositing failed, using raw photo:", cardErr);
     cardBuffer = imageBuffer;
   }
 
   const ts = Date.now();
-
-  // Upload square photo (LinkedIn / X)
-  const squareFileName = `${contentRequestId}-${ts}.png`;
-  const { error: sqUpErr } = await supabase.storage
-    .from("post-images")
-    .upload(squareFileName, imageBuffer, {
-      contentType: "image/png",
-      upsert: true,
-    });
-  if (sqUpErr) {
-    return NextResponse.json(
-      { error: `Storage upload failed: ${sqUpErr.message}` },
-      { status: 500 },
-    );
-  }
-  const squareUrl = supabase.storage
-    .from("post-images")
-    .getPublicUrl(squareFileName).data.publicUrl;
-
-  // Upload card image (Instagram)
   const cardFileName = `${contentRequestId}-${ts}-card.png`;
   const { error: cardUpErr } = await supabase.storage
     .from("post-images")
@@ -143,7 +123,7 @@ export async function POST(request: Request) {
     });
   if (cardUpErr) {
     return NextResponse.json(
-      { error: `Storage upload failed (card): ${cardUpErr.message}` },
+      { error: `Storage upload failed: ${cardUpErr.message}` },
       { status: 500 },
     );
   }
@@ -154,9 +134,9 @@ export async function POST(request: Request) {
   const { data: updated, error: upErr } = await supabase
     .from("content_posts")
     .update({
-      linkedin_image_url: squareUrl,
+      linkedin_image_url: cardUrl,
       instagram_image_url: cardUrl,
-      x_image_url: squareUrl,
+      x_image_url: cardUrl,
     })
     .eq("id", contentRequestId)
     .select("*")
@@ -167,8 +147,7 @@ export async function POST(request: Request) {
   }
 
   return NextResponse.json({
-    imageUrl: squareUrl,
-    instagramImageUrl: cardUrl,
+    imageUrl: cardUrl,
     request: mapRequest(updated as Record<string, unknown>),
   });
 }

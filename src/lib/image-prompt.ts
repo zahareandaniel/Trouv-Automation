@@ -80,14 +80,14 @@ Context:
 - Topic: ${input.topic}
 - Audience: ${input.audience}
 
-Photography style:
-- BLACK AND WHITE / MONOCHROME — every element in greyscale, absolutely no colour
-- Vehicle: gloss black, rendered in deep charcoal tones
-- Setting: a real, recognisable London location — Heathrow Terminal 5 forecourt, Mayfair hotel entrance, Canary Wharf, The Shard area, Knightsbridge, or City of London. The environment must look real with visible architecture, signage, other cars, and people in the background
-- Lighting: natural daylight or soft overcast London light — clean editorial lighting, not overly dramatic or cinematic
-- The photo should feel like it was taken during a real service — a genuine moment, not a studio shoot
-- Camera: eye-level, slight wide angle to capture both the vehicle and surroundings
+Photography style (STRICT):
+- STRICTLY BLACK AND WHITE / MONOCHROME — every single pixel must be greyscale, absolutely zero colour anywhere in the image, no warm tones, no sepia, no colour tinting whatsoever
+- Vehicle: gloss black bodywork, rendered in deep rich charcoal tones with visible reflections
+- Setting: a real, recognisable London location — Heathrow Terminal 5 forecourt, Mayfair hotel entrance, Canary Wharf, The Shard area, Knightsbridge, or City of London. The environment must look real with visible architecture, signage, other cars, and pedestrians in background
+- Lighting: natural daylight or soft overcast London light — clean editorial lighting, not overly dramatic or cinematic, good contrast between darks and lights
+- The photo should feel like it was taken during a real service — a genuine moment, not a studio shoot, not AI-looking
+- Camera: eye-level, slightly wide angle to capture both the vehicle and environment
 - The vehicle's number plate must read "TROUV" in clear capital letters
-- No other text, logos, watermarks, or graphic overlays
-- Square 1:1 composition for Instagram / LinkedIn`;
+- No text overlays, no logos, no watermarks, no graphic elements — just a clean photograph
+- Landscape/wide composition (roughly 16:9 or 2:1) — NOT square, NOT portrait. The image will be placed inside a branded card template so it must be wider than it is tall`;
 }
