@@ -78,7 +78,7 @@ export async function POST() {
   }
 
   // Always target LinkedIn + Instagram
-  const platforms = ["linkedin", "instagram"];
+  const platforms = ["linkedin", "instagram", "x"];
 
   // ── Step 3: Create the content_post record ──────────────────────────────
   const { data: postRow, error: insertErr } = await supabase
