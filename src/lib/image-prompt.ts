@@ -68,8 +68,8 @@ export function buildImagePrompt(input: {
     { scene: `MOTORWAY CONVOY: Two or three black luxury vehicles (${chosen.name} leading, followed by ${chosen2.name}) driving in convoy on a motorway or dual carriageway. Shot from a slightly elevated angle or roadside showing the cars in motion. Road markings, other traffic, and green English countryside or motorway infrastructure visible. Dynamic sense of movement.`, hasDriver: false },
     { scene: `LONDON LINEUP: Three black luxury vehicles parked in a row on a prestigious London street — Mayfair, Belgravia, or Knightsbridge. Period architecture, black railings, and London townhouses in the background. No people — just the fleet, clean and pristine. Shot from a three-quarter front angle.`, hasDriver: false },
     { scene: `AIRPORT PARKING: Two black luxury vehicles (${chosen.name} and ${chosen2.name}) parked at the airport terminal forecourt, front-facing view with the terminal building and 'ARRIVALS' / 'DEPARTURES' signage visible behind them. Clean, professional, like a fleet showcase photo. No people.`, hasDriver: false },
-    { scene: `PRIVATE JET REAR VIEW: A black ${chosen.name} seen from the rear three-quarter angle parked on the apron or VIP parking area of a private jet terminal (Farnborough Airport, Signature Aviation, Harrods Aviation, Inflite Aviation, or Biggin Hill). A private jet / business jet is visible in the background on the tarmac or taxiing. Small exclusive terminal building visible — NOT a large commercial terminal. Dramatic sense of luxury private aviation.`, hasDriver: false },
-    { scene: `PRIVATE JET LANDING: A private jet / business jet on final approach or just touching down at a private aviation airport (Farnborough, Biggin Hill, or similar). A black ${chosen.name} is parked on the apron or VIP area in the foreground, waiting. The jet is prominent in the frame. Small exclusive FBO terminal visible — NOT Heathrow or any large commercial airport. Conveys private aviation and ultra-premium chauffeur service.`, hasDriver: false },
+    { scene: `PRIVATE JET REAR VIEW: A black ${chosen.name} seen from the rear three-quarter angle parked on the apron or VIP parking area of a real private jet aerodrome only (Farnborough Airport, Signature Aviation, Harrods Aviation, Inflite Aviation, or Biggin Hill). A business jet is on the GROUND in the background — parked, taxiing on tarmac, or rolling on the runway. Runway / taxiway / apron and FBO building visible. NEVER show a jet flying low over a town or street.`, hasDriver: false },
+    { scene: `PRIVATE JET AT AIRFIELD: A business jet on the ground at Farnborough, Biggin Hill, or another listed private jet airport — either stationary on the apron or rolling on the runway after landing. A black ${chosen.name} is parked on the apron in the foreground. The scene is entirely within the airport: tarmac, runway markings, perimeter grass, small FBO / hangar. Do NOT depict final approach over houses, villages, high streets, or any urban area — no aircraft low over a town.`, hasDriver: false },
     { scene: "TOWER BRIDGE: A black luxury vehicle driving across or parked near Tower Bridge, London. The iconic bridge towers and suspension cables are prominent in the background. Other traffic and pedestrians visible. Classic London landmark shot.", hasDriver: false },
     { scene: "THE SHARD: A black luxury vehicle parked or driving near London Bridge with The Shard skyscraper towering in the background. Modern London skyline visible. Shot from street level looking up.", hasDriver: false },
     { scene: "BIG BEN & PARLIAMENT: A black luxury vehicle driving past the Houses of Parliament and Big Ben (Elizabeth Tower). Westminster Bridge partially visible. Iconic London establishing shot.", hasDriver: false },
@@ -95,6 +95,12 @@ SECTION 2 — PHOTOGRAPH (middle 46% of the image):
 A photorealistic black-and-white editorial photograph showing:
 ${scene}
 
+AIRCRAFT AND AIRPORT REALISM (mandatory whenever any airplane or jet appears):
+- Aircraft must ONLY appear at a real airport or aerodrome setting: runway, taxiway, apron, hangar, or parked / taxiing on the ground.
+- NEVER show an aircraft on low approach or landing over a town, village, city street, residential rooftops, shop fronts, church spires, or any built-up urban area beneath the jet.
+- NEVER mix a private jet in the sky directly above streets, cars in traffic, or pedestrian zones — that is unrealistic and forbidden.
+- If a jet is moving, show it on the runway or taxiway at the airfield, or high in the sky over open countryside well away from the airfield — not buzzing a town.
+
 ${hasDriver ? `CHAUFFEUR APPEARANCE:
 - Male, well-groomed, clean-shaven or neatly trimmed
 - Wearing a well-fitted dark charcoal or black modern slim-cut suit, crisp white shirt, dark tie, polished black shoes
@@ -112,7 +118,7 @@ All vehicles must be from the Trouv fleet — only these models: Mercedes-Benz S
 - Number plates read "TROUV"
 
 The photograph must be STRICTLY BLACK AND WHITE / MONOCHROME — pure greyscale.
-London location background — real architecture, signage, pedestrians visible.
+Background must match the scene: London streets and landmarks where the scene says London; real airport apron / runway / FBO for private-jet scenes; motorways and countryside for convoy scenes. Real architecture or airfield infrastructure — never fake composite locations.
 Natural daylight, documentary/editorial style, NOT posed.
 
 SECTION 3 — BOTTOM BAR (dark background #111111, approximately bottom 34% of image):

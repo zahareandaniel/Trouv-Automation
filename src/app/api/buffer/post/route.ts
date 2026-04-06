@@ -10,6 +10,7 @@ import {
 import { queueBufferPost } from "@/lib/buffer";
 import { mapRequest } from "@/lib/db-map";
 import { postHasGeneratedCopy } from "@/lib/post-copy";
+import { textForPlatform } from "@/lib/post-text";
 import { envChannelId } from "@/lib/request-helpers";
 import { createServiceClient } from "@/lib/supabase/server";
 import type { TargetPlatform } from "@/lib/types";
@@ -39,7 +40,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const { platform, text, contentRequestId } = parsed.data;
+  const { platform, contentRequestId } = parsed.data;
 
   let supabase;
   try {
@@ -83,6 +84,17 @@ export async function POST(request: Request) {
       "",
     ).trim() || null;
 
+  const text = textForPlatform(
+    mapped as Parameters<typeof textForPlatform>[0],
+    platform as TargetPlatform,
+  );
+  if (!text.trim()) {
+    return NextResponse.json(
+      { error: "No copy for this platform on the post" },
+      { status: 400 },
+    );
+  }
+
   const result = await queueBufferPost(platform as TargetPlatform, text, imageUrl);
 
   const logBase: Record<string, unknown> = {
@@ -92,7 +104,7 @@ export async function POST(request: Request) {
     provider: "buffer",
     provider_post_id: result.postId,
     channel_id: channelId || null,
-    posted_text: text,
+    posted_text: result.sentText ?? text,
     status: result.success ? "success" : "error",
     error_message: result.errorMessage,
     provider_response:

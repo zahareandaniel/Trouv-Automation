@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 import {
   getSuccessfulPublishKeys,
   listApproved,
@@ -40,7 +41,15 @@ export default async function ApprovedPage() {
                     />
                   )}
                   <div className="flex-1">
-                    <h2 className="font-serif text-xl text-text">{r.topic}</h2>
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <h2 className="font-serif text-xl text-text">{r.topic}</h2>
+                      <Link
+                        href={`/drafts/${r.id}`}
+                        className="shrink-0 border border-border px-3 py-1.5 font-mono text-[10px] uppercase tracking-wider text-muted hover:border-accent hover:text-text"
+                      >
+                        Edit post
+                      </Link>
+                    </div>
                     {!hasCopy ? (
                       <p className="mt-2 text-sm text-danger">
                         No generated copy on this post

@@ -5,6 +5,7 @@ import { buildContentPostGenerationPatch } from "@/lib/content-posts/generation-
 import { mapRequest, mapReview } from "@/lib/db-map";
 import { postCopyToGenerationOutput } from "@/lib/generated-to-output";
 import { buildImagePrompt } from "@/lib/image-prompt";
+import { normalizeSocialCardImage } from "@/lib/normalize-social-image";
 import {
   generateIdeaBrief,
   generateSocialCopy,
@@ -218,12 +219,13 @@ export async function POST() {
       }
 
       if (base64Data) {
-        const imageBuffer = Buffer.from(base64Data, "base64");
-        const fileName = `${postId}-${Date.now()}.png`;
+        const raw = Buffer.from(base64Data, "base64");
+        const imageBuffer = await normalizeSocialCardImage(raw);
+        const fileName = `${postId}-${Date.now()}.jpg`;
 
         const { error: upErr2 } = await supabase.storage
           .from("post-images")
-          .upload(fileName, imageBuffer, { contentType: "image/png", upsert: true });
+          .upload(fileName, imageBuffer, { contentType: "image/jpeg", upsert: true });
 
         if (!upErr2) {
           imageUrl = supabase.storage

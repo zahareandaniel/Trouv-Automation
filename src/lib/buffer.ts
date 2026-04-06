@@ -1,3 +1,4 @@
+import { truncateForX } from "@/lib/post-text";
 import type { TargetPlatform } from "@/lib/types";
 
 export type BufferResult = {
@@ -5,6 +6,8 @@ export type BufferResult = {
   postId: string | null;
   raw: unknown;
   errorMessage: string | null;
+  /** Text actually sent to Buffer (e.g. X after length normalization). */
+  sentText: string | null;
 };
 
 const URL = "https://api.buffer.com";
@@ -70,6 +73,7 @@ export async function queueBufferPost(
       postId: null,
       raw: null,
       errorMessage: "BUFFER_ACCESS_TOKEN is not configured",
+      sentText: null,
     };
   }
 
@@ -80,7 +84,62 @@ export async function queueBufferPost(
       postId: null,
       raw: null,
       errorMessage: `Missing env channel id for ${platform}`,
+      sentText: null,
     };
+  }
+
+  const bodyText = platform === "x" ? truncateForX(text) : text;
+
+  if (platform === "instagram" && !String(imageUrl ?? "").trim()) {
+    return {
+      success: false,
+      postId: null,
+      raw: null,
+      errorMessage:
+        "Instagram posts require a generated image — run image generation on this draft first.",
+      sentText: null,
+    };
+  }
+
+  if (platform === "instagram" && imageUrl) {
+    try {
+      const head = await fetch(imageUrl, {
+        method: "HEAD",
+        redirect: "follow",
+        cache: "no-store",
+      });
+      let reachable = head.ok;
+      let statusNote = head.status;
+      if (!reachable) {
+        const get = await fetch(imageUrl, {
+          headers: { Range: "bytes=0-0" },
+          redirect: "follow",
+          cache: "no-store",
+        });
+        reachable = get.ok || get.status === 206;
+        statusNote = get.status;
+      }
+      if (!reachable) {
+        return {
+          success: false,
+          postId: null,
+          raw: null,
+          errorMessage: `Image URL not reachable (HTTP ${statusNote}) — Instagram cannot fetch it. Make the Supabase "post-images" bucket public or fix the URL.`,
+          sentText: bodyText,
+        };
+      }
+    } catch (e) {
+      return {
+        success: false,
+        postId: null,
+        raw: null,
+        errorMessage:
+          e instanceof Error
+            ? `Image URL check failed: ${e.message}`
+            : "Image URL check failed",
+        sentText: bodyText,
+      };
+    }
   }
 
   // Instagram requires a post type and at least one image
@@ -96,7 +155,7 @@ export async function queueBufferPost(
 
   const input: Record<string, unknown> = {
     channelId: cid,
-    text,
+    text: bodyText,
     schedulingType: "automatic",
     mode: shareNow ? "shareNow" : "addToQueue",
     ...(metadata && { metadata }),
@@ -120,6 +179,7 @@ export async function queueBufferPost(
       postId: null,
       raw: null,
       errorMessage: e instanceof Error ? e.message : "Network error",
+      sentText: bodyText,
     };
   }
 
@@ -132,6 +192,7 @@ export async function queueBufferPost(
       postId: null,
       raw: null,
       errorMessage: `Invalid JSON (HTTP ${res.status})`,
+      sentText: bodyText,
     };
   }
 
@@ -141,6 +202,7 @@ export async function queueBufferPost(
       postId: null,
       raw,
       errorMessage: `HTTP ${res.status}`,
+      sentText: bodyText,
     };
   }
 
@@ -151,6 +213,7 @@ export async function queueBufferPost(
       postId: null,
       raw,
       errorMessage: env.errors.map((e) => e.message ?? "GraphQL error").join("; "),
+      sentText: bodyText,
     };
   }
 
@@ -161,11 +224,18 @@ export async function queueBufferPost(
       postId: null,
       raw,
       errorMessage: "Missing createPost",
+      sentText: bodyText,
     };
   }
 
   if (node.post?.id) {
-    return { success: true, postId: node.post.id, raw, errorMessage: null };
+    return {
+      success: true,
+      postId: node.post.id,
+      raw,
+      errorMessage: null,
+      sentText: bodyText,
+    };
   }
 
   if (node.message) {
@@ -174,6 +244,7 @@ export async function queueBufferPost(
       postId: null,
       raw,
       errorMessage: String(node.message),
+      sentText: bodyText,
     };
   }
 
@@ -182,6 +253,7 @@ export async function queueBufferPost(
     postId: null,
     raw,
     errorMessage: "Unexpected Buffer response",
+    sentText: bodyText,
   };
 }
 

@@ -59,7 +59,7 @@ export async function POST(_request: Request, ctx: Ctx) {
       provider: "buffer",
       provider_post_id: result.postId,
       channel_id: envChannelId(platform) || null,
-      posted_text: text,
+      posted_text: result.sentText ?? text,
       status: result.success ? "success" : "error",
       error_message: result.errorMessage,
       provider_response:

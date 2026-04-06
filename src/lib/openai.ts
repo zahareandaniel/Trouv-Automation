@@ -2,6 +2,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import OpenAI from "openai";
 import type { AppSettings } from "@/lib/types";
 import type { TargetPlatform } from "@/lib/types";
+import { X_POST_MAX_CHARS } from "@/lib/post-text";
 import {
   generationOutputSchema,
   reviewOutputSchema,
@@ -121,6 +122,10 @@ ${uniqueHooks.map((h, i) => `${i + 1}. "${h}"`).join("\n")}
 Write something genuinely fresh that a reader would never confuse with any post above.`
     : "";
 
+  const xCharBlock = input.platforms.includes("x")
+    ? `\n\nX / Twitter hard limit: The final X post is assembled as x_hook, then a blank line, then x_post, then a blank line, then x_cta (each non-empty part separated by two newlines, which count toward the limit). The total character count of that assembled string must be ${X_POST_MAX_CHARS} or fewer — including every newline. Be concise; cut words before hitting the limit.`
+    : "";
+
   const system = `You write social copy for ${brandName} (premium London chauffeur / corporate travel).
 
 Voice: ${brandTone}
@@ -130,7 +135,7 @@ Target platforms for this brief: ${input.platforms.join(", ")}.
 For each target platform, write a strong hook (opening line), body copy, and CTA.
 For platforms NOT in the target list, use empty strings.
 
-Banned phrases (do not use): ${banned.length ? banned.join("; ") : "(none configured)"}${feedbackBlock}${hooksBlock}
+Banned phrases (do not use): ${banned.length ? banned.join("; ") : "(none configured)"}${feedbackBlock}${hooksBlock}${xCharBlock}
 
 Return JSON only with exactly these keys:
 linkedin_hook, linkedin_post, linkedin_cta,

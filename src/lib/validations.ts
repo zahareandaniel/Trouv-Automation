@@ -33,7 +33,8 @@ export const reviewBodySchema = z.object({
 
 export const bufferPostBodySchema = z.object({
   platform: targetPlatformSchema,
-  text: z.string().min(1).max(20_000),
+  /** Ignored — copy is always taken from `content_posts` for consistency (incl. X length fix). */
+  text: z.string().max(20_000).optional(),
   contentRequestId: z.uuid(),
 });
 
@@ -55,6 +56,9 @@ export const generationOutputSchema = z.object({
   x_cta: z.string(),
   hashtags: z.array(z.string()),
 });
+
+/** Same shape as AI output — full replace when editing copy after approval. */
+export const replacePostCopyBodySchema = generationOutputSchema;
 
 const VALID_VERDICTS = ["approve", "revise", "reject"] as const;
 

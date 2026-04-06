@@ -3,6 +3,7 @@ import { GoogleGenAI } from "@google/genai";
 import { getSessionEmail } from "@/lib/auth";
 import { mapRequest } from "@/lib/db-map";
 import { buildImagePrompt } from "@/lib/image-prompt";
+import { normalizeSocialCardImage } from "@/lib/normalize-social-image";
 import { createServiceClient } from "@/lib/supabase/server";
 import { z } from "zod";
 
@@ -85,7 +86,8 @@ export async function POST(request: Request) {
       }
     }
     if (!base64Data) throw new Error("No image data returned from Gemini");
-    imageBuffer = Buffer.from(base64Data, "base64");
+    const raw = Buffer.from(base64Data, "base64");
+    imageBuffer = await normalizeSocialCardImage(raw);
   } catch (e) {
     return NextResponse.json(
       { error: e instanceof Error ? e.message : "Image generation failed" },
@@ -95,11 +97,11 @@ export async function POST(request: Request) {
 
   // Upload the card image directly (Gemini generates the full branded card)
   const ts = Date.now();
-  const fileName = `${contentRequestId}-${ts}.png`;
+  const fileName = `${contentRequestId}-${ts}.jpg`;
   const { error: uploadErr } = await supabase.storage
     .from("post-images")
     .upload(fileName, imageBuffer, {
-      contentType: "image/png",
+      contentType: "image/jpeg",
       upsert: true,
     });
   if (uploadErr) {
