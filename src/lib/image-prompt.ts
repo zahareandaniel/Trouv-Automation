@@ -50,8 +50,10 @@ export function buildImagePrompt(input: {
   const chosen = vehicleList[Math.floor(Math.random() * vehicleList.length)];
 
   const scenes = [
-    "AIRPORT PICKUP: The chauffeur holds a small white name board with a client name, greeting a business traveller stepping out of the rear passenger door with a carry-on suitcase. Setting: Heathrow or Gatwick airport terminal forecourt with 'ARRIVALS' signage visible.",
-    "STATION PICKUP: The chauffeur holds a small white name board, waiting for a client at a London train station entrance (e.g. St Pancras, Paddington). The car is parked nearby.",
+    "AIRPORT WAITING: The chauffeur stands ALONE near the arrivals exit holding a small white name board with a client name. He is waiting — the passenger has NOT arrived yet. NO passenger visible. Setting: Heathrow or Gatwick airport terminal forecourt with 'ARRIVALS' signage visible. The car is parked behind him.",
+    "STATION WAITING: The chauffeur stands ALONE holding a small white name board, waiting for a client at a London train station entrance (e.g. St Pancras, Paddington). NO passenger visible. The car is parked nearby.",
+    "AIRPORT WITH PASSENGER: The chauffeur assists a business traveller with luggage at the car boot/trunk at the airport. The passenger has a carry-on suitcase. NO name board — the driver has already met the client. Setting: airport terminal forecourt.",
+    "STATION WITH PASSENGER: The chauffeur opens the rear door for a corporate client at a London train station. NO name board — the client has been collected. The car is parked at the station entrance.",
     "HOTEL DROP-OFF: The chauffeur opens the rear passenger door for a corporate client carrying a briefcase, at a luxury hotel entrance with a canopy overhead. NO name board.",
     "OFFICE COLLECTION: The chauffeur assists a client with luggage at the boot/trunk of the car, in front of a modern glass office building in Canary Wharf or The City. NO name board.",
     "STREET TRANSFER: The chauffeur walks alongside a client toward the parked car on a prestigious London street (Mayfair, Knightsbridge). NO name board. Both are walking, natural and candid.",
