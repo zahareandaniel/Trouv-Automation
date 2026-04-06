@@ -48,18 +48,39 @@ export function buildImagePrompt(input: {
   contentType: string;
 }): string {
   const chosen = vehicleList[Math.floor(Math.random() * vehicleList.length)];
+  const chosen2 = vehicleList[Math.floor(Math.random() * vehicleList.length)];
 
-  const scenes = [
-    "AIRPORT WAITING: The chauffeur stands ALONE near the arrivals exit holding a small white name board with a client name. He is waiting — the passenger has NOT arrived yet. NO passenger visible. Setting: Heathrow or Gatwick airport terminal forecourt with 'ARRIVALS' signage visible. The car is parked behind him.",
-    "STATION WAITING: The chauffeur stands ALONE holding a small white name board, waiting for a client at a London train station entrance (e.g. St Pancras, Paddington). NO passenger visible. The car is parked nearby.",
-    "AIRPORT WITH PASSENGER: The chauffeur assists a business traveller with luggage at the car boot/trunk at the airport. The passenger has a carry-on suitcase. NO name board — the driver has already met the client. Setting: airport terminal forecourt.",
-    "STATION WITH PASSENGER: The chauffeur opens the rear door for a corporate client at a London train station. NO name board — the client has been collected. The car is parked at the station entrance.",
-    "HOTEL DROP-OFF: The chauffeur opens the rear passenger door for a corporate client carrying a briefcase, at a luxury hotel entrance with a canopy overhead. NO name board.",
-    "OFFICE COLLECTION: The chauffeur assists a client with luggage at the boot/trunk of the car, in front of a modern glass office building in Canary Wharf or The City. NO name board.",
-    "STREET TRANSFER: The chauffeur walks alongside a client toward the parked car on a prestigious London street (Mayfair, Knightsbridge). NO name board. Both are walking, natural and candid.",
-    "WAITING: The chauffeur stands beside the car with hands clasped in front, outside a corporate building entrance. NO name board, no client visible. Clean, composed.",
+  // Scenes with chauffeur + single vehicle (use chosen vehicle)
+  const driverScenes = [
+    { scene: "AIRPORT WAITING: The chauffeur stands ALONE near the arrivals exit holding a small white name board with a client name. He is waiting — the passenger has NOT arrived yet. NO passenger visible. Setting: Heathrow or Gatwick airport terminal forecourt with 'ARRIVALS' signage visible. The car is parked behind him.", hasDriver: true },
+    { scene: "STATION WAITING: The chauffeur stands ALONE holding a small white name board, waiting for a client at a London train station entrance (e.g. St Pancras, Paddington). NO passenger visible. The car is parked nearby.", hasDriver: true },
+    { scene: "AIRPORT WITH PASSENGER: The chauffeur assists a business traveller with luggage at the car boot/trunk at the airport. The passenger has a carry-on suitcase. NO name board. Setting: airport terminal forecourt.", hasDriver: true },
+    { scene: "STATION WITH PASSENGER: The chauffeur opens the rear door for a corporate client at a London train station. NO name board. The car is parked at the station entrance.", hasDriver: true },
+    { scene: "HOTEL DROP-OFF: The chauffeur opens the rear passenger door for a corporate client carrying a briefcase, at a luxury hotel entrance with a canopy overhead. NO name board.", hasDriver: true },
+    { scene: "OFFICE COLLECTION: The chauffeur assists a client with luggage at the boot/trunk of the car, in front of a modern glass office building in Canary Wharf or The City. NO name board.", hasDriver: true },
+    { scene: "STREET TRANSFER: The chauffeur walks alongside a client toward the parked car on a prestigious London street (Mayfair, Knightsbridge). NO name board. Both are walking, natural and candid.", hasDriver: true },
+    { scene: "WAITING: The chauffeur stands beside the car with hands clasped in front, outside a corporate building entrance. NO name board, no client visible. Clean, composed.", hasDriver: true },
   ];
-  const scene = scenes[Math.floor(Math.random() * scenes.length)];
+
+  // Fleet and landscape scenes — no specific driver, wider shots
+  const fleetScenes = [
+    { scene: `EVENT FLEET: Three or four black luxury vehicles (mix of ${chosen.name} and ${chosen2.name}) parked in a line outside a grand London venue or hotel entrance (e.g. The Savoy, Claridge's, The Dorchester). Chauffeurs in dark suits stand beside each car. Red carpet or event signage visible. Shot from a wide angle showing the full fleet lineup.`, hasDriver: false },
+    { scene: `MOTORWAY CONVOY: Two or three black luxury vehicles (${chosen.name} leading, followed by ${chosen2.name}) driving in convoy on a motorway or dual carriageway. Shot from a slightly elevated angle or roadside showing the cars in motion. Road markings, other traffic, and green English countryside or motorway infrastructure visible. Dynamic sense of movement.`, hasDriver: false },
+    { scene: `LONDON LINEUP: Three black luxury vehicles parked in a row on a prestigious London street — Mayfair, Belgravia, or Knightsbridge. Period architecture, black railings, and London townhouses in the background. No people — just the fleet, clean and pristine. Shot from a three-quarter front angle.`, hasDriver: false },
+    { scene: `AIRPORT PARKING: Two black luxury vehicles (${chosen.name} and ${chosen2.name}) parked at the airport terminal forecourt, front-facing view with the terminal building and 'ARRIVALS' / 'DEPARTURES' signage visible behind them. Clean, professional, like a fleet showcase photo. No people.`, hasDriver: false },
+    { scene: `AIRPORT REAR VIEW: A black ${chosen.name} seen from the rear three-quarter angle parked at the airport terminal, with an airplane visible in the sky or on approach in the background. Terminal building visible. Dramatic sense of travel and arrival.`, hasDriver: false },
+    { scene: `AIRPLANE LANDING: A commercial airplane on final approach or just touching down at Heathrow airport, with a black ${chosen.name} parked in the foreground or driving along the airport perimeter road. The plane is large and prominent in the frame. Conveys the connection between air travel and chauffeur service.`, hasDriver: false },
+    { scene: "TOWER BRIDGE: A black luxury vehicle driving across or parked near Tower Bridge, London. The iconic bridge towers and suspension cables are prominent in the background. Other traffic and pedestrians visible. Classic London landmark shot.", hasDriver: false },
+    { scene: "THE SHARD: A black luxury vehicle parked or driving near London Bridge with The Shard skyscraper towering in the background. Modern London skyline visible. Shot from street level looking up.", hasDriver: false },
+    { scene: "BIG BEN & PARLIAMENT: A black luxury vehicle driving past the Houses of Parliament and Big Ben (Elizabeth Tower). Westminster Bridge partially visible. Iconic London establishing shot.", hasDriver: false },
+    { scene: "CANARY WHARF: Two black luxury vehicles parked outside one of the glass towers in Canary Wharf business district. Modern corporate architecture, reflective glass facades. Shot from a low angle emphasising the height of the buildings.", hasDriver: false },
+    { scene: `NIGHT FLEET: Three black luxury vehicles (${chosen.name}, ${chosen2.name}) parked in a line on a well-lit London street at dusk or blue hour. Street lights, building lights, and reflections on the wet pavement. Moody, premium atmosphere.`, hasDriver: false },
+  ];
+
+  const allScenes = [...driverScenes, ...fleetScenes];
+  const picked = allScenes[Math.floor(Math.random() * allScenes.length)];
+  const scene = picked.scene;
+  const hasDriver = picked.hasDriver;
 
   return `Generate a COMPLETE social media card image with the following EXACT layout. The final image must be 4:5 portrait ratio (1080×1350 pixels). This is a branded marketing card, NOT just a photograph.
 
@@ -74,7 +95,7 @@ SECTION 2 — PHOTOGRAPH (middle 46% of the image):
 A photorealistic black-and-white editorial photograph showing:
 ${scene}
 
-CHAUFFEUR APPEARANCE:
+${hasDriver ? `CHAUFFEUR APPEARANCE:
 - Male, well-groomed, clean-shaven or neatly trimmed
 - Wearing a well-fitted dark charcoal or black modern slim-cut suit, crisp white shirt, dark tie, polished black shoes
 - MUST NOT wear a hat, cap, or any headwear — bare head only
@@ -84,9 +105,10 @@ VEHICLE (in the photograph):
 - ${chosen.name} (chassis ${chosen.chassis})
 - Body style: ${chosen.body}
 - ${chosen.visualDescription}
-- ${chosen.notThisVehicle}
-- The vehicle MUST be BLACK colour only — gloss black bodywork, black paint. No white, silver, grey, blue, or any other colour vehicle. ONLY black.
-- Number plate reads "TROUV"
+- ${chosen.notThisVehicle}` : `VEHICLES (in the photograph):
+All vehicles must be from the Trouv fleet — only these models: Mercedes-Benz S-Class W223, Mercedes-Benz V-Class W447, Range Rover L460, BMW 7 Series G70.`}
+- ALL vehicles MUST be BLACK colour only — gloss black bodywork, black paint. No white, silver, grey, blue, or any other colour. ONLY black.
+- Number plates read "TROUV"
 
 The photograph must be STRICTLY BLACK AND WHITE / MONOCHROME — pure greyscale.
 London location background — real architecture, signage, pedestrians visible.
