@@ -54,10 +54,10 @@ export function buildImagePrompt(input: {
   const driverScenes = [
     { scene: "AIRPORT WAITING: The chauffeur stands ALONE near the arrivals exit holding a small white name board with a client name. He is waiting — the passenger has NOT arrived yet. NO passenger visible. Setting: Heathrow or Gatwick airport terminal forecourt with 'ARRIVALS' signage visible. The car is parked behind him.", hasDriver: true },
     { scene: "STATION WAITING: The chauffeur stands ALONE holding a small white name board, waiting for a client at a London train station entrance (e.g. St Pancras, Paddington). NO passenger visible. The car is parked nearby.", hasDriver: true },
-    { scene: "AIRPORT WITH PASSENGER: The chauffeur assists a business traveller with luggage at the car boot/trunk at the airport. The passenger has a carry-on suitcase. NO name board. Setting: airport terminal forecourt.", hasDriver: true },
-    { scene: "STATION WITH PASSENGER: The chauffeur opens the rear door for a corporate client at a London train station. NO name board. The car is parked at the station entrance.", hasDriver: true },
-    { scene: "HOTEL DROP-OFF: The chauffeur opens the rear passenger door for a corporate client carrying a briefcase, at a luxury hotel entrance with a canopy overhead. NO name board.", hasDriver: true },
-    { scene: "OFFICE COLLECTION: The chauffeur assists a client with luggage at the boot/trunk of the car, in front of a modern glass office building in Canary Wharf or The City. NO name board.", hasDriver: true },
+    { scene: "AIRPORT WITH PASSENGER: The CHAUFFEUR is loading luggage into the boot/trunk — only the chauffeur handles the bags, NEVER the passenger. The passenger stands nearby with hands free, watching or checking their phone. NO name board. Setting: airport terminal forecourt.", hasDriver: true },
+    { scene: "STATION WITH PASSENGER: The CHAUFFEUR opens the rear door for a corporate client at a London train station. The chauffeur holds the door — the passenger does NOT touch the door. NO name board. The car is parked at the station entrance.", hasDriver: true },
+    { scene: "HOTEL DROP-OFF: The CHAUFFEUR opens the rear passenger door for a corporate client at a luxury hotel entrance with a canopy overhead. The chauffeur holds the door — the passenger simply steps out. NO name board.", hasDriver: true },
+    { scene: "OFFICE COLLECTION: The CHAUFFEUR is loading a briefcase or luggage into the boot/trunk — only the chauffeur handles the bags, NEVER the passenger. The client stands nearby with hands free. In front of a modern glass office building in Canary Wharf or The City. NO name board.", hasDriver: true },
     { scene: "STREET TRANSFER: The chauffeur walks alongside a client toward the parked car on a prestigious London street (Mayfair, Knightsbridge). NO name board. Both are walking, natural and candid.", hasDriver: true },
     { scene: "WAITING: The chauffeur stands beside the car with hands clasped in front, outside a corporate building entrance. NO name board, no client visible. Clean, composed.", hasDriver: true },
   ];
@@ -100,6 +100,7 @@ ${hasDriver ? `CHAUFFEUR APPEARANCE:
 - Wearing a well-fitted dark charcoal or black modern slim-cut suit, crisp white shirt, dark tie, polished black shoes
 - MUST NOT wear a hat, cap, or any headwear — bare head only
 - MUST NOT wear gloves — bare hands only
+- CRITICAL SERVICE RULE: The chauffeur ALWAYS handles all luggage, doors, and bags — the passenger NEVER carries, loads, or touches their own luggage or opens their own door. The passenger's hands should be free (holding phone, handbag, or nothing).
 
 VEHICLE (in the photograph):
 - ${chosen.name} (chassis ${chosen.chassis})
