@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import { GoogleGenAI } from "@google/genai";
 import { getSessionEmail } from "@/lib/auth";
 import { mapRequest } from "@/lib/db-map";
-import { composeCardImage } from "@/lib/image-card";
 import { buildImagePrompt } from "@/lib/image-prompt";
 import { createServiceClient } from "@/lib/supabase/server";
 import { z } from "zod";
@@ -67,8 +66,6 @@ export async function POST(request: Request) {
 
   const prompt = buildImagePrompt({ topic, audience, contentType });
 
-
-  // Generate image with Google Gemini Nano Banana 2 (gemini-3.1-flash-image-preview)
   let imageBuffer: Buffer;
   try {
     const ai = new GoogleGenAI({ apiKey });
@@ -96,49 +93,31 @@ export async function POST(request: Request) {
     );
   }
 
-  // Build branded card (photo + headline + bullets) for all platforms
-  const hookLine =
-    String(req.linkedin_hook ?? req.instagram_hook ?? "").trim() ||
-    String(req.linkedin_post ?? req.instagram_caption ?? "").slice(0, 200);
-
-  let cardBuffer: Buffer;
-  let cardError: string | null = null;
-  try {
-    cardBuffer = await composeCardImage(imageBuffer, {
-      contentType,
-      topic,
-      hookLine,
-    });
-  } catch (cardErr) {
-    cardError = cardErr instanceof Error ? cardErr.message : String(cardErr);
-    console.error("Card compositing failed:", cardError);
-    cardBuffer = imageBuffer;
-  }
-
+  // Upload the card image directly (Gemini generates the full branded card)
   const ts = Date.now();
-  const cardFileName = `${contentRequestId}-${ts}-card.png`;
-  const { error: cardUpErr } = await supabase.storage
+  const fileName = `${contentRequestId}-${ts}.png`;
+  const { error: uploadErr } = await supabase.storage
     .from("post-images")
-    .upload(cardFileName, cardBuffer, {
+    .upload(fileName, imageBuffer, {
       contentType: "image/png",
       upsert: true,
     });
-  if (cardUpErr) {
+  if (uploadErr) {
     return NextResponse.json(
-      { error: `Storage upload failed: ${cardUpErr.message}` },
+      { error: `Storage upload failed: ${uploadErr.message}` },
       { status: 500 },
     );
   }
-  const cardUrl = supabase.storage
+  const imageUrl = supabase.storage
     .from("post-images")
-    .getPublicUrl(cardFileName).data.publicUrl;
+    .getPublicUrl(fileName).data.publicUrl;
 
   const { data: updated, error: upErr } = await supabase
     .from("content_posts")
     .update({
-      linkedin_image_url: cardUrl,
-      instagram_image_url: cardUrl,
-      x_image_url: cardUrl,
+      linkedin_image_url: imageUrl,
+      instagram_image_url: imageUrl,
+      x_image_url: imageUrl,
     })
     .eq("id", contentRequestId)
     .select("*")
@@ -149,8 +128,7 @@ export async function POST(request: Request) {
   }
 
   return NextResponse.json({
-    imageUrl: cardUrl,
+    imageUrl,
     request: mapRequest(updated as Record<string, unknown>),
-    ...(cardError && { cardError }),
   });
 }

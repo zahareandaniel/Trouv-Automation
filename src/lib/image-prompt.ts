@@ -37,6 +37,11 @@ const vehicleList = [
   },
 ];
 
+/**
+ * Generates a prompt for a complete branded social media card:
+ * dark background, TROUV branding, headline, photo scene, key points, website.
+ * The AI generates the full card as a single image — no server-side compositing.
+ */
 export function buildImagePrompt(input: {
   topic: string;
   audience: string;
@@ -45,49 +50,56 @@ export function buildImagePrompt(input: {
   const chosen = vehicleList[Math.floor(Math.random() * vehicleList.length)];
 
   const scenes = [
-    "AIRPORT PICKUP: The chauffeur holds a small white name board with a client name, greeting a business traveller who is stepping out of the rear passenger door with a carry-on suitcase. The rear door is open. Setting: Heathrow or Gatwick airport terminal forecourt with 'ARRIVALS' signage visible. Shot from the rear three-quarter angle.",
-    "STATION PICKUP: The chauffeur holds a small white name board, waiting for a client at a London train station entrance (e.g. St Pancras, Paddington). The car is parked nearby. Other travellers visible in background. Shot from a wide angle.",
-    "HOTEL DROP-OFF: The chauffeur opens the rear passenger door for a corporate client carrying a briefcase, at a luxury hotel entrance with a canopy visible overhead. NO name board. Shot from a side angle showing the full length of the car.",
-    "OFFICE COLLECTION: The chauffeur assists a client with luggage at the boot/trunk of the car, in front of a modern glass office building in Canary Wharf or The City. NO name board. Shot from a three-quarter rear angle.",
-    "STREET TRANSFER: The chauffeur walks alongside a client toward the parked car on a prestigious London street (Mayfair, Knightsbridge) with period architecture. NO name board. Both are in motion, natural and candid. Shot from a medium distance.",
-    "WAITING: The chauffeur stands beside the car with hands clasped in front, waiting for a client outside a corporate building entrance. NO name board, no client visible. Clean, composed shot. Shot from a three-quarter front angle.",
+    "AIRPORT PICKUP: The chauffeur holds a small white name board with a client name, greeting a business traveller stepping out of the rear passenger door with a carry-on suitcase. Setting: Heathrow or Gatwick airport terminal forecourt with 'ARRIVALS' signage visible.",
+    "STATION PICKUP: The chauffeur holds a small white name board, waiting for a client at a London train station entrance (e.g. St Pancras, Paddington). The car is parked nearby.",
+    "HOTEL DROP-OFF: The chauffeur opens the rear passenger door for a corporate client carrying a briefcase, at a luxury hotel entrance with a canopy overhead. NO name board.",
+    "OFFICE COLLECTION: The chauffeur assists a client with luggage at the boot/trunk of the car, in front of a modern glass office building in Canary Wharf or The City. NO name board.",
+    "STREET TRANSFER: The chauffeur walks alongside a client toward the parked car on a prestigious London street (Mayfair, Knightsbridge). NO name board. Both are walking, natural and candid.",
+    "WAITING: The chauffeur stands beside the car with hands clasped in front, outside a corporate building entrance. NO name board, no client visible. Clean, composed.",
   ];
   const scene = scenes[Math.floor(Math.random() * scenes.length)];
 
-  return `Photorealistic black-and-white documentary-style editorial photograph for a premium London chauffeur service. This should look like a real moment captured by a professional photographer — natural, authentic, not posed or over-stylised.
+  return `Generate a COMPLETE social media card image with the following EXACT layout. The final image must be 4:5 portrait ratio (1080×1350 pixels). This is a branded marketing card, NOT just a photograph.
 
-SCENE (this describes exactly what is happening in the image):
+=== CARD LAYOUT (top to bottom) ===
+
+SECTION 1 — TOP BAR (dark background #111111, approximately top 20% of image):
+- Top-left: The text "TROUV" in bold white letters, with "CHAUFFEURS" in smaller grey letters next to it
+- Below that: The headline "${input.topic}" in large bold white text (this is the main title)
+- Below that: "${input.contentType.toUpperCase()}" in small grey uppercase letters with wide letter spacing
+
+SECTION 2 — PHOTOGRAPH (middle 46% of the image):
+A photorealistic black-and-white editorial photograph showing:
 ${scene}
 
-CHAUFFEUR APPEARANCE (strict rules):
+CHAUFFEUR APPEARANCE:
 - Male, well-groomed, clean-shaven or neatly trimmed
 - Wearing a well-fitted dark charcoal or black modern slim-cut suit, crisp white shirt, dark tie, polished black shoes
 - MUST NOT wear a hat, cap, or any headwear — bare head only
 - MUST NOT wear gloves — bare hands only
-- He looks like a real high-end private driver — modern, professional, not a costume character
-- No old-fashioned chauffeur uniforms, no peaked caps, no white gloves
 
-VEHICLE IDENTITY (most important visual instruction):
-- Chassis code: ${chosen.chassis}
-- Full name: ${chosen.name}
+VEHICLE (in the photograph):
+- ${chosen.name} (chassis ${chosen.chassis})
 - Body style: ${chosen.body}
-- Exact visual appearance: ${chosen.visualDescription}
+- ${chosen.visualDescription}
 - ${chosen.notThisVehicle}
-- Render ONLY this exact vehicle. If unsure, default to chassis code ${chosen.chassis}.
+- Number plate reads "TROUV"
 
-Context:
-- Brand: Trouv Chauffeurs, premium London chauffeur company
-- Topic: ${input.topic}
-- Audience: ${input.audience}
+The photograph must be STRICTLY BLACK AND WHITE / MONOCHROME — pure greyscale.
+London location background — real architecture, signage, pedestrians visible.
+Natural daylight, documentary/editorial style, NOT posed.
 
-Photography style (STRICT):
-- STRICTLY BLACK AND WHITE / MONOCHROME — every single pixel must be greyscale, absolutely zero colour anywhere in the image, no warm tones, no sepia, no colour tinting whatsoever
-- Vehicle: gloss black bodywork, rendered in deep rich charcoal tones with visible reflections
-- Setting: a real, recognisable London location — Heathrow Terminal 5 forecourt, Mayfair hotel entrance, Canary Wharf, The Shard area, Knightsbridge, or City of London. The environment must look real with visible architecture, signage, other cars, and pedestrians in background
-- Lighting: natural daylight or soft overcast London light — clean editorial lighting, not overly dramatic or cinematic, good contrast between darks and lights
-- The photo should feel like it was taken during a real service — a genuine moment, not a studio shoot, not AI-looking
-- Camera: eye-level, slightly wide angle to capture both the vehicle and environment
-- The vehicle's number plate must read "TROUV" in clear capital letters
-- No text overlays, no logos, no watermarks, no graphic elements — just a clean photograph
-- Landscape/wide composition (roughly 16:9 or 2:1) — NOT square, NOT portrait. The image will be placed inside a branded card template so it must be wider than it is tall`;
+SECTION 3 — BOTTOM BAR (dark background #111111, approximately bottom 34% of image):
+- 2-3 bullet points in light grey text, each starting with a bullet dot "•"
+  These should be short relevant points about ${input.topic} for ${input.audience}
+  Example bullet points: "• Professional drivers available 24/7" "• Seamless airport and city transfers" "• Dedicated account management"
+- At the very bottom center: "www.trouv.co.uk" in small dark grey text
+
+=== STYLE RULES ===
+- The dark sections (#111111 background) frame the photograph — like a professional marketing card
+- Text must be clean, sharp, and perfectly readable — use a modern sans-serif font
+- The photograph section is the visual centrepiece
+- The overall look should match premium corporate marketing materials
+- Portrait 4:5 ratio (taller than wide)
+- The card should look like it was designed by a professional graphic designer`;
 }

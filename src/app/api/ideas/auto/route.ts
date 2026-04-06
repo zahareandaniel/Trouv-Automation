@@ -4,7 +4,6 @@ import { getSessionEmail } from "@/lib/auth";
 import { buildContentPostGenerationPatch } from "@/lib/content-posts/generation-update";
 import { mapRequest, mapReview } from "@/lib/db-map";
 import { postCopyToGenerationOutput } from "@/lib/generated-to-output";
-import { composeCardImage } from "@/lib/image-card";
 import { buildImagePrompt } from "@/lib/image-prompt";
 import {
   generateIdeaBrief,
@@ -191,10 +190,9 @@ export async function POST() {
     );
   }
 
-  // ── Step 6: Gemini generates the image ─────────────────────────────────
+  // ── Step 6: Gemini generates the branded card image ────────────────────
   const googleApiKey = process.env.GOOGLE_AI_API_KEY?.trim();
   let imageUrl: string | null = null;
-  let cardError: string | null = null;
 
   if (googleApiKey) {
     try {
@@ -221,44 +219,23 @@ export async function POST() {
 
       if (base64Data) {
         const imageBuffer = Buffer.from(base64Data, "base64");
-        const ts = Date.now();
+        const fileName = `${postId}-${Date.now()}.png`;
 
-        // Build branded card for all platforms
-        const updRow = updPost as Record<string, unknown>;
-        const hookLine =
-          String(updRow.linkedin_hook ?? updRow.instagram_hook ?? "").trim() ||
-          String(updRow.linkedin_post ?? updRow.instagram_caption ?? "").slice(0, 200);
-
-        let cardBuf: Buffer = imageBuffer;
-        try {
-          cardBuf = await composeCardImage(imageBuffer, {
-            contentType: brief.content_type,
-            topic: brief.topic,
-            hookLine,
-          });
-        } catch (cardErr) {
-          cardError = cardErr instanceof Error ? cardErr.message : String(cardErr);
-          console.error("Card compositing failed in auto pipeline:", cardError);
-        }
-
-        const cardFileName = `${postId}-${ts}-card.png`;
         const { error: upErr2 } = await supabase.storage
           .from("post-images")
-          .upload(cardFileName, cardBuf, { contentType: "image/png", upsert: true });
+          .upload(fileName, imageBuffer, { contentType: "image/png", upsert: true });
 
         if (!upErr2) {
-          const cardUrl = supabase.storage
+          imageUrl = supabase.storage
             .from("post-images")
-            .getPublicUrl(cardFileName).data.publicUrl;
-
-          imageUrl = cardUrl;
+            .getPublicUrl(fileName).data.publicUrl;
 
           await supabase
             .from("content_posts")
             .update({
-              linkedin_image_url: cardUrl,
-              instagram_image_url: cardUrl,
-              x_image_url: cardUrl,
+              linkedin_image_url: imageUrl,
+              instagram_image_url: imageUrl,
+              x_image_url: imageUrl,
             })
             .eq("id", postId);
         }
@@ -283,6 +260,5 @@ export async function POST() {
       ? mapRequest(finalPost as Record<string, unknown>)
       : null,
     imageUrl,
-    ...(cardError && { cardError }),
   });
 }
