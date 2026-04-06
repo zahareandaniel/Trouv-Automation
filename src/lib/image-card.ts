@@ -1,4 +1,3 @@
-import { Resvg } from "@resvg/resvg-js";
 import { readFile } from "fs/promises";
 import { join } from "path";
 import satori from "satori";
@@ -6,6 +5,8 @@ import sharp from "sharp";
 
 const CARD_W = 1080;
 const CARD_H = 1350;
+const PHOTO_H = 620;
+const TOP_H = 280;
 
 let fontCache: { regular: Buffer; bold: Buffer } | null = null;
 
@@ -42,12 +43,13 @@ async function loadFonts() {
 }
 
 /**
- * Composites an AI photo into a branded card (1080×1350):
- *   - Top panel:  brand name + content type + topic headline
- *   - Middle:     AI-generated monochrome photo
- *   - Bottom:     hook / key message + bullet points + website
+ * Branded card (1080x1350):
+ *   Top:    TROUV CHAUFFEURS + topic headline + content type  (satori → sharp)
+ *   Middle: AI photo                                          (sharp composite)
+ *   Bottom: bullet points + www.trouv.co.uk                   (satori → sharp)
  *
- * Uses satori + resvg (works on Vercel serverless).
+ * Renders text panels with satori → sharp (no resvg native binary needed).
+ * Composites photo with sharp.
  */
 export async function composeCardImage(
   photoBuffer: Buffer,
@@ -58,6 +60,10 @@ export async function composeCardImage(
   },
 ): Promise<Buffer> {
   const fonts = await loadFonts();
+  const fontOpts = [
+    { name: "Inter", data: fonts.regular, weight: 400 as const, style: "normal" as const },
+    { name: "Inter", data: fonts.bold, weight: 700 as const, style: "normal" as const },
+  ];
 
   const contentType = opts.contentType.toUpperCase();
   const topic = opts.topic;
@@ -65,131 +71,148 @@ export async function composeCardImage(
     opts.hookLine.length > 200
       ? opts.hookLine.slice(0, 197) + "…"
       : opts.hookLine;
-
-  // Split hook into bullet points if it contains sentences
   const bullets = splitIntoBullets(hook);
 
-  const PHOTO_H = 620;
+  const BOTTOM_H = CARD_H - TOP_H - PHOTO_H;
 
-  const resizedPhoto = await sharp(photoBuffer)
+  // ── Render top panel (brand + headline) ──
+  const topSvg = await satori(
+    buildTopPanel(contentType, topic),
+    { width: CARD_W, height: TOP_H, fonts: fontOpts },
+  );
+  const topPng = await sharp(Buffer.from(topSvg)).png().toBuffer();
+
+  // ── Resize photo ──
+  const photoPng = await sharp(photoBuffer)
     .resize(CARD_W, PHOTO_H, { fit: "cover", position: "centre" })
     .png()
     .toBuffer();
 
-  const photoDataUri = `data:image/png;base64,${resizedPhoto.toString("base64")}`;
+  // ── Render bottom panel (bullets + website) ──
+  const bottomSvg = await satori(
+    buildBottomPanel(bullets, BOTTOM_H),
+    { width: CARD_W, height: BOTTOM_H, fonts: fontOpts },
+  );
+  const bottomPng = await sharp(Buffer.from(bottomSvg)).png().toBuffer();
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const element: any = {
+  // ── Composite all three bands ──
+  const card = await sharp({
+    create: {
+      width: CARD_W,
+      height: CARD_H,
+      channels: 4,
+      background: { r: 17, g: 17, b: 17, alpha: 1 },
+    },
+  })
+    .composite([
+      { input: topPng, top: 0, left: 0 },
+      { input: photoPng, top: TOP_H, left: 0 },
+      { input: bottomPng, top: TOP_H + PHOTO_H, left: 0 },
+    ])
+    .png()
+    .toBuffer();
+
+  return card;
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function buildTopPanel(contentType: string, topic: string): any {
+  return {
     type: "div",
     props: {
       style: {
         display: "flex",
         flexDirection: "column",
         width: CARD_W,
-        height: CARD_H,
+        height: TOP_H,
         backgroundColor: "#111111",
-        color: "#ffffff",
+        padding: "44px 56px 0 56px",
         fontFamily: "Inter",
       },
       children: [
-        // ── Top panel: brand + headline ──────────────────────────
         {
           type: "div",
           props: {
-            style: {
-              display: "flex",
-              flexDirection: "column",
-              padding: "44px 56px 32px 56px",
-            },
+            style: { display: "flex", alignItems: "center", marginBottom: 20 },
             children: [
               {
                 type: "div",
                 props: {
                   style: {
-                    display: "flex",
-                    alignItems: "center",
-                    marginBottom: 20,
-                  },
-                  children: [
-                    {
-                      type: "div",
-                      props: {
-                        style: {
-                          fontSize: 20,
-                          fontWeight: 700,
-                          letterSpacing: "0.15em",
-                          color: "#ffffff",
-                        },
-                        children: "TROUV",
-                      },
-                    },
-                    {
-                      type: "div",
-                      props: {
-                        style: {
-                          fontSize: 14,
-                          fontWeight: 400,
-                          color: "#888888",
-                          marginLeft: 16,
-                          letterSpacing: "0.08em",
-                        },
-                        children: "CHAUFFEURS",
-                      },
-                    },
-                  ],
-                },
-              },
-              {
-                type: "div",
-                props: {
-                  style: {
-                    fontSize: 44,
+                    fontSize: 20,
                     fontWeight: 700,
-                    lineHeight: 1.15,
+                    letterSpacing: "0.15em",
                     color: "#ffffff",
-                    marginBottom: 10,
                   },
-                  children: topic,
+                  children: "TROUV",
                 },
               },
               {
                 type: "div",
                 props: {
                   style: {
-                    fontSize: 16,
+                    fontSize: 14,
                     fontWeight: 400,
-                    color: "#999999",
-                    letterSpacing: "0.15em",
+                    color: "#888888",
+                    marginLeft: 16,
+                    letterSpacing: "0.08em",
                   },
-                  children: contentType,
+                  children: "CHAUFFEURS",
                 },
               },
             ],
           },
         },
-
-        // ── Photo ────────────────────────────────────────────────
-        {
-          type: "img",
-          props: {
-            src: photoDataUri,
-            width: CARD_W,
-            height: PHOTO_H,
-            style: { objectFit: "cover" },
-          },
-        },
-
-        // ── Bottom panel: bullets + website ──────────────────────
         {
           type: "div",
           props: {
             style: {
-              display: "flex",
-              flexDirection: "column",
-              padding: "28px 56px 0 56px",
-              flex: 1,
-              justifyContent: "flex-start",
+              fontSize: 42,
+              fontWeight: 700,
+              lineHeight: 1.15,
+              color: "#ffffff",
+              marginBottom: 10,
             },
+            children: topic,
+          },
+        },
+        {
+          type: "div",
+          props: {
+            style: {
+              fontSize: 16,
+              fontWeight: 400,
+              color: "#999999",
+              letterSpacing: "0.15em",
+            },
+            children: contentType,
+          },
+        },
+      ],
+    },
+  };
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function buildBottomPanel(bullets: string[], height: number): any {
+  return {
+    type: "div",
+    props: {
+      style: {
+        display: "flex",
+        flexDirection: "column",
+        width: CARD_W,
+        height,
+        backgroundColor: "#111111",
+        padding: "28px 56px 0 56px",
+        fontFamily: "Inter",
+        justifyContent: "space-between",
+      },
+      children: [
+        {
+          type: "div",
+          props: {
+            style: { display: "flex", flexDirection: "column" },
             children: bullets.map((b) => ({
               type: "div",
               props: {
@@ -229,15 +252,13 @@ export async function composeCardImage(
             })),
           },
         },
-
-        // ── Footer: website ──────────────────────────────────────
         {
           type: "div",
           props: {
             style: {
               display: "flex",
               justifyContent: "center",
-              padding: "0 0 32px 0",
+              paddingBottom: 32,
             },
             children: {
               type: "div",
@@ -256,22 +277,6 @@ export async function composeCardImage(
       ],
     },
   };
-
-  const svg = await satori(element, {
-    width: CARD_W,
-    height: CARD_H,
-    fonts: [
-      { name: "Inter", data: fonts.regular, weight: 400, style: "normal" },
-      { name: "Inter", data: fonts.bold, weight: 700, style: "normal" },
-    ],
-  });
-
-  const resvg = new Resvg(svg, {
-    fitTo: { mode: "width", value: CARD_W },
-  });
-  const pngData = resvg.render();
-
-  return Buffer.from(pngData.asPng());
 }
 
 function splitIntoBullets(text: string): string[] {
@@ -282,7 +287,10 @@ function splitIntoBullets(text: string): string[] {
 
   if (sentences.length >= 2) return sentences.slice(0, 4);
 
-  const chunks = text.split(/[,;]/).map((s) => s.trim()).filter(Boolean);
+  const chunks = text
+    .split(/[,;]/)
+    .map((s) => s.trim())
+    .filter(Boolean);
   if (chunks.length >= 2) return chunks.slice(0, 4);
 
   return [text];

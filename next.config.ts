@@ -5,7 +5,6 @@ const supabaseHostname = process.env.NEXT_PUBLIC_SUPABASE_URL
   : "ftitliohvvkzcopgwyly.supabase.co";
 
 const nextConfig: NextConfig = {
-  serverExternalPackages: ["@resvg/resvg-js"],
   outputFileTracingIncludes: {
     "/api/**": ["./public/fonts/**"],
   },
