@@ -1,42 +1,30 @@
 /* eslint-disable @next/next/no-img-element */
 import { ImageResponse } from "next/og";
-import { readFile } from "fs/promises";
-import { join } from "path";
 import sharp from "sharp";
 
 const CARD_W = 1080;
 const CARD_H = 1350;
 const PHOTO_H = 620;
 
-let fontCache: ArrayBuffer[] | null = null;
+let fontCache: { regular: ArrayBuffer; bold: ArrayBuffer } | null = null;
 
-async function tryReadFile(...paths: string[]): Promise<Buffer> {
-  for (const p of paths) {
-    try {
-      return await readFile(p);
-    } catch {
-      continue;
-    }
-  }
-  throw new Error(`Font not found in any of: ${paths.join(", ")}`);
-}
-
-async function loadFonts(): Promise<ArrayBuffer[]> {
+async function loadFonts() {
   if (fontCache) return fontCache;
-  const cwd = process.cwd();
-  const paths = (name: string) => [
-    join(cwd, `public/fonts/${name}`),
-    join(cwd, `src/assets/fonts/${name}`),
-    join(cwd, `.next/server/public/fonts/${name}`),
-  ];
-  const [regular, bold] = await Promise.all([
-    tryReadFile(...paths("inter-regular.woff2")),
-    tryReadFile(...paths("inter-bold.woff2")),
+
+  // Fetch Inter Latin subset from Google Fonts CDN (always available, no filesystem needed)
+  const [regularRes, boldRes] = await Promise.all([
+    fetch("https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa1ZL7W0Q5nw.woff2"),
+    fetch("https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa1ZL7W0Q5nw.woff2"),
   ]);
-  fontCache = [
-    new Uint8Array(regular).buffer as ArrayBuffer,
-    new Uint8Array(bold).buffer as ArrayBuffer,
-  ];
+
+  if (!regularRes.ok || !boldRes.ok) {
+    throw new Error("Failed to fetch Inter fonts from Google CDN");
+  }
+
+  fontCache = {
+    regular: await regularRes.arrayBuffer(),
+    bold: await boldRes.arrayBuffer(),
+  };
   return fontCache;
 }
 
@@ -66,10 +54,10 @@ export async function composeCardImage(
 
   const resizedPhoto = await sharp(photoBuffer)
     .resize(CARD_W, PHOTO_H, { fit: "cover", position: "centre" })
-    .png()
+    .jpeg({ quality: 80 })
     .toBuffer();
 
-  const photoSrc = `data:image/png;base64,${resizedPhoto.toString("base64")}`;
+  const photoSrc = `data:image/jpeg;base64,${resizedPhoto.toString("base64")}`;
 
   const response = new ImageResponse(
     (
@@ -215,8 +203,8 @@ export async function composeCardImage(
       width: CARD_W,
       height: CARD_H,
       fonts: [
-        { name: "Inter", data: fonts[0], weight: 400, style: "normal" },
-        { name: "Inter", data: fonts[1], weight: 700, style: "normal" },
+        { name: "Inter", data: fonts.regular, weight: 400, style: "normal" },
+        { name: "Inter", data: fonts.bold, weight: 700, style: "normal" },
       ],
     },
   );

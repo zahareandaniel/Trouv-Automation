@@ -102,6 +102,7 @@ export async function POST(request: Request) {
     String(req.linkedin_post ?? req.instagram_caption ?? "").slice(0, 200);
 
   let cardBuffer: Buffer;
+  let cardError: string | null = null;
   try {
     cardBuffer = await composeCardImage(imageBuffer, {
       contentType,
@@ -109,7 +110,8 @@ export async function POST(request: Request) {
       hookLine,
     });
   } catch (cardErr) {
-    console.error("Card compositing failed, using raw photo:", cardErr);
+    cardError = cardErr instanceof Error ? cardErr.message : String(cardErr);
+    console.error("Card compositing failed:", cardError);
     cardBuffer = imageBuffer;
   }
 
@@ -149,5 +151,6 @@ export async function POST(request: Request) {
   return NextResponse.json({
     imageUrl: cardUrl,
     request: mapRequest(updated as Record<string, unknown>),
+    ...(cardError && { cardError }),
   });
 }

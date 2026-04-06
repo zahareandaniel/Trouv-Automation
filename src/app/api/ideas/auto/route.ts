@@ -194,6 +194,7 @@ export async function POST() {
   // ── Step 6: Gemini generates the image ─────────────────────────────────
   const googleApiKey = process.env.GOOGLE_AI_API_KEY?.trim();
   let imageUrl: string | null = null;
+  let cardError: string | null = null;
 
   if (googleApiKey) {
     try {
@@ -236,7 +237,8 @@ export async function POST() {
             hookLine,
           });
         } catch (cardErr) {
-          console.error("Card compositing failed in auto pipeline:", cardErr);
+          cardError = cardErr instanceof Error ? cardErr.message : String(cardErr);
+          console.error("Card compositing failed in auto pipeline:", cardError);
         }
 
         const cardFileName = `${postId}-${ts}-card.png`;
@@ -281,5 +283,6 @@ export async function POST() {
       ? mapRequest(finalPost as Record<string, unknown>)
       : null,
     imageUrl,
+    ...(cardError && { cardError }),
   });
 }

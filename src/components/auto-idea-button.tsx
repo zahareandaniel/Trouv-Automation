@@ -38,6 +38,9 @@ export function AutoIdeaButton() {
         throw new Error(data.error ?? "Something went wrong");
       }
 
+      if (data.cardError) {
+        console.warn("Card error:", data.cardError);
+      }
       setStepIdx(STEPS.length - 1);
       await new Promise((r) => setTimeout(r, 600));
       router.push(`/drafts/${data.postId}`);
