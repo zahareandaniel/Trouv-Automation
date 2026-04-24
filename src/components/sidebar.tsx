@@ -14,7 +14,7 @@ const links = [
   { href: "/settings", label: "Settings" },
 ] as const;
 
-export function Sidebar() {
+export function Sidebar({ userEmail }: { userEmail: string }) {
   const pathname = usePathname() ?? "";
   const [open, setOpen] = useState(false);
 
@@ -96,6 +96,15 @@ export function Sidebar() {
           })}
         </nav>
         <div className="border-t border-border p-2">
+          <p className="mb-2 truncate px-1 font-mono text-[10px] uppercase tracking-wider text-muted">
+            Signed in
+          </p>
+          <p
+            className="mb-3 truncate px-1 text-xs text-text"
+            title={userEmail}
+          >
+            {userEmail}
+          </p>
           <button
             type="button"
             onClick={() => void logout()}

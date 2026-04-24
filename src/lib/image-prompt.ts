@@ -80,6 +80,7 @@ export function buildImagePrompt(input: {
   const allScenes = [...driverScenes, ...fleetScenes];
   const picked = allScenes[Math.floor(Math.random() * allScenes.length)];
   const scene = picked.scene;
+  const allowsPrivateJet = scene.includes("PRIVATE JET");
   const hasDriver = picked.hasDriver;
 
   return `Generate a COMPLETE social media card image with the following EXACT layout. The final image must be 4:5 portrait ratio (1080×1350 pixels). This is a branded marketing card, NOT just a photograph.
@@ -95,11 +96,13 @@ SECTION 2 — PHOTOGRAPH (middle 46% of the image):
 A photorealistic black-and-white editorial photograph showing:
 ${scene}
 
-AIRCRAFT AND AIRPORT REALISM (mandatory whenever any airplane or jet appears):
-- Aircraft must ONLY appear at a real airport or aerodrome setting: runway, taxiway, apron, hangar, or parked / taxiing on the ground.
-- NEVER show an aircraft on low approach or landing over a town, village, city street, residential rooftops, shop fronts, church spires, or any built-up urban area beneath the jet.
-- NEVER mix a private jet in the sky directly above streets, cars in traffic, or pedestrian zones — that is unrealistic and forbidden.
-- If a jet is moving, show it on the runway or taxiway at the airfield, or high in the sky over open countryside well away from the airfield — not buzzing a town.
+PRIVATE JET RULE (critical):
+${allowsPrivateJet
+    ? `- This selected scene is a private-jet scene. A jet is allowed ONLY at a real private-jet airport / aerodrome setting: runway, taxiway, apron, hangar, FBO.
+- NEVER show a jet on low approach or landing over any town, village, city street, houses, rooftops, shops, or pedestrians.
+- If a jet is moving, it must be on runway/taxiway at the airfield (or parked on apron).`
+    : `- This selected scene is NOT a private-jet scene. Do NOT include any airplane, jet, runway, airport apron, or aviation elements at all.
+- No aircraft in the sky, no airport in the background, and no private-jet references unless the chosen scene explicitly says PRIVATE JET.`}
 
 ${hasDriver ? `CHAUFFEUR APPEARANCE:
 - Male, well-groomed, clean-shaven or neatly trimmed

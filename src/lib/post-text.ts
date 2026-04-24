@@ -1,3 +1,4 @@
+import type { GenerationOutput } from "@/lib/validations";
 import type { TargetPlatform } from "@/lib/types";
 
 /** Twitter / X single-post cap (grapheme / weighted units — we stay strictly under). */
@@ -12,6 +13,26 @@ function graphemeSegments(text: string): string[] {
 
 function graphemeCount(text: string): number {
   return graphemeSegments(text).length;
+}
+
+/**
+ * Whether assembled X fields exceed the publish grapheme limit (same rules as {@link truncateForX}).
+ * Does not modify text. Used to reject over-limit generations instead of truncating silently.
+ */
+export function assembledXExceedsGraphemeLimit(
+  output: Pick<
+    GenerationOutput,
+    "x_hook" | "x_post" | "x_cta"
+  >,
+): boolean {
+  const t = [output.x_hook, output.x_post, output.x_cta]
+    .map((s) => String(s ?? "").trim())
+    .filter(Boolean)
+    .join("\n\n");
+  if (!t) return false;
+  const hasUrl = /https?:\/\/\S+/i.test(t);
+  const target = hasUrl ? Math.min(X_POST_MAX_CHARS, 268) : X_POST_MAX_CHARS;
+  return graphemeCount(t) > target;
 }
 
 /**

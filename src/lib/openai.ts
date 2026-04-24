@@ -9,6 +9,11 @@ import {
   type GenerationOutput,
   type ReviewOutput,
 } from "@/lib/validations";
+import { generateSocialPost } from "@/lib/generators/claude-writer";
+import {
+  TROUV_COPY_PLAYBOOK,
+  TROUV_REVIEW_RUBRIC,
+} from "@/lib/trouv-copy-playbook";
 
 function bannedList(settings: AppSettings | null): string[] {
   const b = settings?.banned_phrases;
@@ -34,11 +39,20 @@ export async function generateIdeaBrief(
     ? `\n\nBLOCKLIST — these topics have been posted in the last 60 days. LinkedIn will REJECT posts that are too similar. You MUST NOT repeat, rephrase, or create any variation of these:\n${recentTopics.map((t, i) => `${i + 1}. ${t}`).join("\n")}\n\nYour new topic must be so different that no reader could confuse it with any topic above.`
     : "";
 
-  const system = `You are a content strategist for ${brandName}, a premium London chauffeur and corporate travel company.
-Generate ONE unique social media content idea. Return JSON only with exactly these keys:
-- topic: a concise content topic (e.g. "Airport transfer reliability", "Corporate event fleet management")
-- audience: the target audience label (e.g. "Executive Assistants", "Corporate Travel Managers", "C-suite executives", "Event planners")
-- content_type: the post format (e.g. "thought leadership", "service spotlight", "client story", "tip", "case study")
+  const system = `You are a content strategist for ${brandName}, a premium London chauffeur service based in Mayfair (Trouv Chauffeurs company LinkedIn).
+
+Generate ONE unique idea aligned to this performance hierarchy (prefer higher-ranked when it fits):
+1. operational — real fleet on location, chauffeur and vehicle, airside (e.g. Farnborough, London City), multi-vehicle event logistics
+2. behind the scenes — specific real-job details (named airports, hotel drops, roadshows, early starts)
+3. case study — anonymised client problem and outcome
+4. tip — practical, opinionated for PAs, travel managers, or executives
+5. seasonal — only if tied to a service story or operational moment (not generic holiday copy)
+6. announcement — when appropriate
+
+Return JSON only with exactly these keys:
+- topic: a concise, concrete brief (prefer specific detail: time, route, airport, vehicle, scenario). Never generic filler.
+- audience: one target label (e.g. "Executive PAs", "Corporate travel managers", "C-suite executives", "Luxury travel advisors")
+- content_type: exactly one of: operational | behind the scenes | case study | tip | seasonal | announcement
 
 CRITICAL UNIQUENESS RULES (LinkedIn rejects similar posts within 60 days):
 - The topic must be COMPLETELY DIFFERENT from any in the blocklist below.
@@ -94,12 +108,6 @@ export async function generateSocialCopy(input: {
   } | null;
   recentHooks?: string[];
 }): Promise<{ output: GenerationOutput; model: string }> {
-  const apiKey = process.env.OPENAI_API_KEY?.trim();
-  if (!apiKey) throw new Error("OPENAI_API_KEY is not configured");
-
-  const model =
-    process.env.OPENAI_DEFAULT_MODEL?.trim() || "gpt-4o-mini";
-
   const banned = bannedList(input.settings);
   const brandName = input.settings?.brand_name ?? "Trouv Chauffeurs";
   const brandTone =
@@ -126,22 +134,27 @@ Write something genuinely fresh that a reader would never confuse with any post 
     ? `\n\nX / Twitter hard limit: The final X post is assembled as x_hook, then a blank line, then x_post, then a blank line, then x_cta (each non-empty part separated by two newlines, which count toward the limit). The total character count of that assembled string must be ${X_POST_MAX_CHARS} or fewer — including every newline. Be concise; cut words before hitting the limit.`
     : "";
 
-  const system = `You write social copy for ${brandName} (premium London chauffeur / corporate travel).
+  const appBanned =
+    banned.length > 0
+      ? `\n\nApp-configured banned phrases (do not use): ${banned.join("; ")}`
+      : "";
 
-Voice: ${brandTone}
-Never: hype, childish tone, generic luxury filler, emojis unless the brief explicitly asks, exaggerated claims, startup jargon.
+  const system = `${TROUV_COPY_PLAYBOOK}
 
-Target platforms for this brief: ${input.platforms.join(", ")}.
-For each target platform, write a strong hook (opening line), body copy, and CTA.
-For platforms NOT in the target list, use empty strings.
+Organization context (metadata only; follow COMPANY NAME RULES in copy): ${brandName}.
+Secondary tone note from app settings (must not override the playbook): ${brandTone}.
 
-Banned phrases (do not use): ${banned.length ? banned.join("; ") : "(none configured)"}${feedbackBlock}${hooksBlock}${xCharBlock}
+Target platforms for this request: ${input.platforms.join(", ")}.
+For each target platform, fill hook, body, and CTA fields (linkedin_hook / linkedin_post / linkedin_cta, etc.).
+For platforms NOT in the target list, use empty strings for all three fields.${appBanned}${feedbackBlock}${hooksBlock}${xCharBlock}
 
-Return JSON only with exactly these keys:
+API OUTPUT (required)
+Return JSON only — no markdown, no preamble, no keys beyond those listed.
+Exactly these keys:
 linkedin_hook, linkedin_post, linkedin_cta,
 instagram_hook, instagram_caption, instagram_cta,
 x_hook, x_post, x_cta,
-hashtags (array of strings, no leading #)`;
+hashtags (array of strings, no leading #; at most 3 items, often [])`;
 
   const user = JSON.stringify({
     topic: input.topic,
@@ -151,25 +164,19 @@ hashtags (array of strings, no leading #)`;
     brand_tone: brandTone,
   });
 
-  const client = new OpenAI({ apiKey });
-  const completion = await client.chat.completions.create({
-    model,
-    response_format: { type: "json_object" },
-    messages: [
-      { role: "system", content: system },
-      { role: "user", content: user },
-    ],
-    temperature: 0.55,
+  const { text: raw, model } = await generateSocialPost({
+    systemPrompt: system,
+    brief: user,
+    maxTokens: 1024,
   });
-
-  const raw = completion.choices[0]?.message?.content;
-  if (!raw) throw new Error("Empty OpenAI response");
 
   let parsed: unknown;
   try {
-    parsed = JSON.parse(raw);
+    const jsonMatch = raw.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error("no JSON object");
+    parsed = JSON.parse(jsonMatch[0]);
   } catch {
-    throw new Error("OpenAI returned invalid JSON");
+    throw new Error("Claude returned invalid JSON for social generation");
   }
 
   const out = generationOutputSchema.safeParse(parsed);
@@ -214,9 +221,11 @@ export async function reviewGeneratedCopy(input: {
 
   const system = `You are a senior editorial QA reviewer for ${brandName}.
 
-Brand tone: ${brandTone}
+Brand tone (app settings): ${brandTone}
 ${strictnessGuide}
-Banned phrases: ${banned.length ? banned.join("; ") : "none"}
+App banned phrases: ${banned.length ? banned.join("; ") : "none"}
+
+${TROUV_REVIEW_RUBRIC}
 
 Score the draft copy (0-100) for overall quality, brand alignment, and clarity.
 quality_verdict must be exactly one of: approve, revise, reject

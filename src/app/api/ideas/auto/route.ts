@@ -11,6 +11,7 @@ import {
   generateSocialCopy,
   reviewGeneratedCopy,
 } from "@/lib/openai";
+import { assembledXExceedsGraphemeLimit } from "@/lib/post-text";
 import { targetPlatformsFromDb } from "@/lib/platforms";
 import { ensureAppSettings } from "@/lib/settings";
 import { createServiceClient } from "@/lib/supabase/server";
@@ -120,6 +121,20 @@ export async function POST() {
   } catch (e) {
     return NextResponse.json(
       { error: e instanceof Error ? e.message : "Copy generation failed", postId },
+      { status: 502 },
+    );
+  }
+
+  if (
+    resolvedPlatforms.includes("x") &&
+    assembledXExceedsGraphemeLimit(gen.output)
+  ) {
+    return NextResponse.json(
+      {
+        error:
+          "Generated X copy exceeds the character limit. Regenerate with shorter x_hook, x_post, and x_cta (newlines count).",
+        postId,
+      },
       { status: 502 },
     );
   }

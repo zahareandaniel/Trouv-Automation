@@ -95,7 +95,10 @@ export async function PATCH(_request: Request, ctx: Ctx) {
 
   const bufferResults: { platform: TargetPlatform; success: boolean; error?: string }[] = [];
 
-  for (const platform of platforms) {
+  for (let i = 0; i < platforms.length; i++) {
+    const platform = platforms[i];
+    if (i > 0) await new Promise((r) => setTimeout(r, 900));
+
     const text = textForPlatform(post as Parameters<typeof textForPlatform>[0], platform);
     if (!text.trim()) continue;
 

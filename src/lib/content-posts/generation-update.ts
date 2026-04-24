@@ -2,7 +2,7 @@ import type { GenerationOutput } from "@/lib/validations";
 import { STATUS_DRAFT } from "@/lib/content-posts/status";
 
 /**
- * Columns we persist after OpenAI generation.
+ * Columns we persist after AI generation (Claude for copy).
  * Must match real `content_posts` columns in Supabase.
  */
 export const CONTENT_POSTS_GENERATION_WRITE_KEYS = [

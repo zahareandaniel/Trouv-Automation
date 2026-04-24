@@ -3,6 +3,7 @@ import { AutoIdeaButton } from "@/components/auto-idea-button";
 import { PostDeleteButton } from "@/components/post-delete-button";
 import { PostNowButton } from "@/components/post-now-button";
 import { StatusBadge } from "@/components/status-badge";
+import { getSessionEmail } from "@/lib/auth";
 import { STATUS_IDEA } from "@/lib/content-posts/status";
 import { getDashboardStats, listRecentRequests } from "@/lib/queries";
 import { hintForFetchFailure } from "@/lib/supabase/validate-url";
@@ -16,6 +17,8 @@ function fmt(iso: string) {
 }
 
 export default async function DashboardPage() {
+  const sessionEmail = await getSessionEmail();
+
   let stats: Awaited<ReturnType<typeof getDashboardStats>>;
   let recent: Awaited<ReturnType<typeof listRecentRequests>>;
   let loadError: string | null = null;
@@ -50,6 +53,11 @@ export default async function DashboardPage() {
         <div>
           <h1 className="font-serif text-3xl text-text">Dashboard</h1>
           <p className="mt-2 text-sm text-muted">Pipeline overview</p>
+          {sessionEmail ? (
+            <p className="mt-1 font-mono text-[10px] uppercase tracking-wider text-muted">
+              Session: {sessionEmail}
+            </p>
+          ) : null}
         </div>
         <AutoIdeaButton />
       </header>

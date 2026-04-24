@@ -60,6 +60,26 @@ type Gql = {
   };
 };
 
+const BUFFER_CREATE_MAX_ATTEMPTS = 4;
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function parseRetryAfterMs(res: Response): number | null {
+  const h = res.headers.get("retry-after");
+  if (!h) return null;
+  const sec = Number.parseInt(h, 10);
+  if (!Number.isNaN(sec)) return Math.min(Math.max(sec * 1000, 500), 120_000);
+  const when = Date.parse(h);
+  if (!Number.isNaN(when)) return Math.min(Math.max(when - Date.now(), 500), 120_000);
+  return null;
+}
+
+function looksLikeRateLimitMessage(msg: string): boolean {
+  return /429|rate\s*limit|too\s+many\s+requests|throttl/i.test(msg);
+}
+
 export async function queueBufferPost(
   platform: TargetPlatform,
   text: string,
@@ -162,88 +182,128 @@ export async function queueBufferPost(
     ...(assets && { assets }),
   };
 
-  let res: Response;
-  try {
-    res = await fetch(URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ query: CREATE_MUTATION, variables: { input } }),
-      cache: "no-store",
-    });
-  } catch (e) {
-    return {
-      success: false,
-      postId: null,
-      raw: null,
-      errorMessage: e instanceof Error ? e.message : "Network error",
-      sentText: bodyText,
-    };
-  }
+  let lastRes: Response | null = null;
 
-  let raw: unknown;
-  try {
-    raw = await res.json();
-  } catch {
-    return {
-      success: false,
-      postId: null,
-      raw: null,
-      errorMessage: `Invalid JSON (HTTP ${res.status})`,
-      sentText: bodyText,
-    };
-  }
+  for (let attempt = 0; attempt < BUFFER_CREATE_MAX_ATTEMPTS; attempt++) {
+    if (attempt > 0) {
+      const wait =
+        (lastRes && parseRetryAfterMs(lastRes)) ??
+        Math.min(2000 * 2 ** (attempt - 1), 16_000);
+      await sleep(wait);
+    }
 
-  if (!res.ok) {
+    let res: Response;
+    try {
+      res = await fetch(URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ query: CREATE_MUTATION, variables: { input } }),
+        cache: "no-store",
+      });
+    } catch (e) {
+      return {
+        success: false,
+        postId: null,
+        raw: null,
+        errorMessage: e instanceof Error ? e.message : "Network error",
+        sentText: bodyText,
+      };
+    }
+
+    lastRes = res;
+
+    let raw: unknown;
+    try {
+      raw = await res.json();
+    } catch {
+      const retry429 = res.status === 429 && attempt + 1 < BUFFER_CREATE_MAX_ATTEMPTS;
+      if (retry429) continue;
+      return {
+        success: false,
+        postId: null,
+        raw: null,
+        errorMessage: `Invalid JSON (HTTP ${res.status})`,
+        sentText: bodyText,
+      };
+    }
+
+    if (res.status === 429 && attempt + 1 < BUFFER_CREATE_MAX_ATTEMPTS) {
+      continue;
+    }
+
+    if (!res.ok) {
+      return {
+        success: false,
+        postId: null,
+        raw,
+        errorMessage: `HTTP ${res.status}`,
+        sentText: bodyText,
+      };
+    }
+
+    const env = raw as Gql;
+    const gqlErrText = env.errors?.map((e) => e.message ?? "").join("; ") ?? "";
+    if (
+      gqlErrText &&
+      looksLikeRateLimitMessage(gqlErrText) &&
+      attempt + 1 < BUFFER_CREATE_MAX_ATTEMPTS
+    ) {
+      continue;
+    }
+
+    if (env.errors?.length) {
+      return {
+        success: false,
+        postId: null,
+        raw,
+        errorMessage: env.errors.map((e) => e.message ?? "GraphQL error").join("; "),
+        sentText: bodyText,
+      };
+    }
+
+    const node = env.data?.createPost;
+    if (!node) {
+      return {
+        success: false,
+        postId: null,
+        raw,
+        errorMessage: "Missing createPost",
+        sentText: bodyText,
+      };
+    }
+
+    if (node.post?.id) {
+      return {
+        success: true,
+        postId: node.post.id,
+        raw,
+        errorMessage: null,
+        sentText: bodyText,
+      };
+    }
+
+    if (node.message) {
+      const msg = String(node.message);
+      if (looksLikeRateLimitMessage(msg) && attempt + 1 < BUFFER_CREATE_MAX_ATTEMPTS) {
+        continue;
+      }
+      return {
+        success: false,
+        postId: null,
+        raw,
+        errorMessage: msg,
+        sentText: bodyText,
+      };
+    }
+
     return {
       success: false,
       postId: null,
       raw,
-      errorMessage: `HTTP ${res.status}`,
-      sentText: bodyText,
-    };
-  }
-
-  const env = raw as Gql;
-  if (env.errors?.length) {
-    return {
-      success: false,
-      postId: null,
-      raw,
-      errorMessage: env.errors.map((e) => e.message ?? "GraphQL error").join("; "),
-      sentText: bodyText,
-    };
-  }
-
-  const node = env.data?.createPost;
-  if (!node) {
-    return {
-      success: false,
-      postId: null,
-      raw,
-      errorMessage: "Missing createPost",
-      sentText: bodyText,
-    };
-  }
-
-  if (node.post?.id) {
-    return {
-      success: true,
-      postId: node.post.id,
-      raw,
-      errorMessage: null,
-      sentText: bodyText,
-    };
-  }
-
-  if (node.message) {
-    return {
-      success: false,
-      postId: null,
-      raw,
-      errorMessage: String(node.message),
+      errorMessage: "Unexpected Buffer response",
       sentText: bodyText,
     };
   }
@@ -251,8 +311,8 @@ export async function queueBufferPost(
   return {
     success: false,
     postId: null,
-    raw,
-    errorMessage: "Unexpected Buffer response",
+    raw: null,
+    errorMessage: "HTTP 429 — Buffer rate limit (retries exhausted). Wait a minute and queue X again from Approved.",
     sentText: bodyText,
   };
 }
