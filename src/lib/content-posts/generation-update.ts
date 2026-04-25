@@ -1,3 +1,4 @@
+// X / Twitter removed from pipeline 2026-04-25 — DB x_* columns retained for historical drafts; app no longer writes them.
 import type { GenerationOutput } from "@/lib/validations";
 import { STATUS_DRAFT } from "@/lib/content-posts/status";
 
@@ -12,13 +13,8 @@ export const CONTENT_POSTS_GENERATION_WRITE_KEYS = [
   "instagram_hook",
   "instagram_caption",
   "instagram_cta",
-  "x_hook",
-  "x_post",
-  "x_cta",
   "hashtags",
 ] as const;
-
-type GenerationWriteKey = (typeof CONTENT_POSTS_GENERATION_WRITE_KEYS)[number];
 
 /**
  * Build a Supabase-safe `update` payload: only known columns + status → `draft`.

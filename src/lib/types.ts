@@ -2,13 +2,16 @@ import type { ContentPostStatus } from "@/lib/content-posts/status";
 
 export type { ContentPostStatus };
 
-/** Mirrors target_platform enum */
-export type TargetPlatform = "linkedin" | "instagram" | "x";
+/** App-supported social targets (Buffer + generation). */
+export type TargetPlatform = "linkedin" | "instagram";
 
 /** Mirrors review_verdict enum */
 export type ReviewVerdict = "approve" | "revise" | "reject";
 
-/** `content_posts` row — brief + generated copy on the same row. */
+/**
+ * `content_posts` row — brief + generated copy on the same row.
+ * X/Twitter field mapping removed 2026-04-25; `x_*` columns may still exist in Supabase.
+ */
 export interface ContentRequest {
   id: string;
   topic: string;
@@ -26,14 +29,10 @@ export interface ContentRequest {
   instagram_hook: string | null;
   instagram_caption: string | null;
   instagram_cta: string | null;
-  x_hook: string | null;
-  x_post: string | null;
-  x_cta: string | null;
   hashtags: string[] | null;
 
   linkedin_image_url: string | null;
   instagram_image_url: string | null;
-  x_image_url: string | null;
 }
 
 export interface ContentReview {
@@ -72,6 +71,7 @@ export interface PublishLog {
   topic?: string | null;
 }
 
+/** `buffer_x_profile_id` may still exist in DB; app no longer reads it (X removed 2026-04-25). */
 export interface AppSettings {
   id: number;
   brand_name: string | null;
@@ -80,7 +80,6 @@ export interface AppSettings {
   review_strictness: number | null;
   buffer_linkedin_profile_id: string | null;
   buffer_instagram_profile_id: string | null;
-  buffer_x_profile_id: string | null;
   created_at: string;
   updated_at: string;
 }

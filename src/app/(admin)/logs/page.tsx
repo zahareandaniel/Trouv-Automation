@@ -39,7 +39,7 @@ export default async function LogsPage({
         <Link href={q()} className={!sp.platform ? "text-accent" : "text-muted"}>
           All
         </Link>
-        {["linkedin", "instagram", "x"].map((p) => (
+        {["linkedin", "instagram"].map((p) => (
           <Link
             key={p}
             href={q(p, sp.status)}

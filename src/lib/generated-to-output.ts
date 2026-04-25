@@ -1,3 +1,4 @@
+// X / Twitter removed from pipeline 2026-04-25 — DB columns retained for historical drafts.
 import type { ContentRequest } from "@/lib/types";
 import type { GenerationOutput } from "@/lib/validations";
 
@@ -10,9 +11,6 @@ export function postCopyToGenerationOutput(post: ContentRequest): GenerationOutp
     instagram_hook: post.instagram_hook ?? "",
     instagram_caption: post.instagram_caption ?? "",
     instagram_cta: post.instagram_cta ?? "",
-    x_hook: post.x_hook ?? "",
-    x_post: post.x_post ?? "",
-    x_cta: post.x_cta ?? "",
     hashtags: post.hashtags ?? [],
   };
 }

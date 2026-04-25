@@ -2,7 +2,7 @@ import { z } from "zod";
 
 export { contentPostStatusSchema } from "@/lib/content-posts/status";
 
-export const targetPlatformSchema = z.enum(["linkedin", "instagram", "x"]);
+export const targetPlatformSchema = z.enum(["linkedin", "instagram"]);
 
 export const loginBodySchema = z.object({
   email: z.string().email(),
@@ -13,14 +13,14 @@ export const createIdeaBodySchema = z.object({
   topic: z.string().min(1, "Topic is required"),
   audience: z.string().min(1, "Audience is required"),
   content_type: z.string().min(1, "Content type is required"),
-  platforms: z.array(z.string()).min(1, "Select at least one platform"),
+  platforms: z.array(targetPlatformSchema).min(1, "Select at least one platform"),
 });
 
 export const updateIdeaBodySchema = z.object({
   topic: z.string().min(1).optional(),
   audience: z.string().min(1).optional(),
   content_type: z.string().min(1).optional(),
-  platforms: z.array(z.string()).min(1).optional(),
+  platforms: z.array(targetPlatformSchema).min(1).optional(),
 });
 
 export const generateBodySchema = z.object({
@@ -33,7 +33,7 @@ export const reviewBodySchema = z.object({
 
 export const bufferPostBodySchema = z.object({
   platform: targetPlatformSchema,
-  /** Ignored — copy is always taken from `content_posts` for consistency (incl. X length fix). */
+  /** Ignored — copy is always taken from `content_posts` for consistency. */
   text: z.string().max(20_000).optional(),
   contentRequestId: z.uuid(),
 });
@@ -51,9 +51,6 @@ export const generationOutputSchema = z.object({
   instagram_hook: z.string(),
   instagram_caption: z.string(),
   instagram_cta: z.string(),
-  x_hook: z.string(),
-  x_post: z.string(),
-  x_cta: z.string(),
   hashtags: z.array(z.string()),
 });
 
@@ -82,7 +79,6 @@ export const reviewOutputSchema = z.object({
   revised_suggestions: z.object({
     linkedin: z.string(),
     instagram: z.string(),
-    x: z.string(),
   }),
 });
 

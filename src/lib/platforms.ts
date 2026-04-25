@@ -1,6 +1,6 @@
 import type { TargetPlatform } from "@/lib/types";
 
-const KNOWN: readonly TargetPlatform[] = ["linkedin", "instagram", "x"];
+const KNOWN: readonly TargetPlatform[] = ["linkedin", "instagram"];
 const KNOWN_SET = new Set<string>(KNOWN);
 
 /** Normalize Postgres `text[]` / JSON array to plain strings. */

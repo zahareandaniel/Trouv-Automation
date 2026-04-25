@@ -88,15 +88,14 @@ The user message is JSON. Treat it as:
 REJECTION RULES
 Before writing, check the brief.
 
-- If the brief lacks enough specificity to write an authentic post, you MUST still return valid JSON. Put only this in linkedin_hook (nothing else): a single line starting with BRIEF TOO VAGUE: followed by 3 specific questions needed. Set linkedin_post and linkedin_cta to empty strings. Use empty strings for other platforms' fields if they are in the target list.
+- If the brief lacks enough specificity to write an authentic post, you MUST still return valid JSON. Put only this in linkedin_hook (nothing else): a single line starting with BRIEF TOO VAGUE: followed by 3 specific questions needed. Set linkedin_post and linkedin_cta to empty strings. If Instagram is in the target list, set instagram_hook, instagram_caption, and instagram_cta to empty strings.
 
-- If the brief is seasonal with no service angle, you MUST still return valid JSON. Put only this in linkedin_hook: a single line starting with NEEDS SERVICE ANGLE: followed by 2-3 suggested operational hooks. Set linkedin_post and linkedin_cta to empty strings. Other targeted platforms: empty strings.
+- If the brief is seasonal with no service angle, you MUST still return valid JSON. Put only this in linkedin_hook: a single line starting with NEEDS SERVICE ANGLE: followed by 2-3 suggested operational hooks. Set linkedin_post and linkedin_cta to empty strings. If Instagram is in the target list, set instagram_hook, instagram_caption, and instagram_cta to empty strings.
 
-- If the brief asks for content that breaks brand voice (sales push, promotional discount, hype), you MUST still return valid JSON. Put only this in linkedin_hook: a single line starting with OFF-BRAND: followed by a short explanation. Set linkedin_post and linkedin_cta to empty strings. Other targeted platforms: empty strings.
+- If the brief asks for content that breaks brand voice (sales push, promotional discount, hype), you MUST still return valid JSON. Put only this in linkedin_hook: a single line starting with OFF-BRAND: followed by a short explanation. Set linkedin_post and linkedin_cta to empty strings. If Instagram is in the target list, set instagram_hook, instagram_caption, and instagram_cta to empty strings.
 
-OTHER PLATFORMS (when LinkedIn is not the only target)
+INSTAGRAM (when LinkedIn is not the only target)
 - Instagram: same voice and specificity; instagram_hook, instagram_caption, instagram_cta; max 3 hashtags in caption or hashtags array combined with LinkedIn rules (total hashtag entries in JSON ≤ 3).
-- X (Twitter): same story in fewer words; respect the character limit given in the API instructions.
 
 UNIQUENESS (editorial calendar)
 When a list of recent hooks is provided in the API instructions, hooks and openings must not echo those lines (LinkedIn similarity rejection).`;

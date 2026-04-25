@@ -29,9 +29,6 @@ type CopyForm = {
   instagram_hook: string;
   instagram_caption: string;
   instagram_cta: string;
-  x_hook: string;
-  x_post: string;
-  x_cta: string;
 };
 
 function initialCopyState(request: ContentRequest): CopyForm {
@@ -42,9 +39,6 @@ function initialCopyState(request: ContentRequest): CopyForm {
     instagram_hook: request.instagram_hook ?? "",
     instagram_caption: request.instagram_caption ?? "",
     instagram_cta: request.instagram_cta ?? "",
-    x_hook: request.x_hook ?? "",
-    x_post: request.x_post ?? "",
-    x_cta: request.x_cta ?? "",
   };
 }
 
@@ -298,7 +292,7 @@ export function DraftDetailClient({
         </p>
       ) : null}
 
-      <div className="grid gap-4 lg:grid-cols-3">
+      <div className="grid gap-4 lg:grid-cols-2">
         {allowCopyEdit ? (
           <>
             <EditableCol
@@ -319,15 +313,6 @@ export function DraftDetailClient({
               onBody={(v) => setCopy((c) => ({ ...c, instagram_caption: v }))}
               onCta={(v) => setCopy((c) => ({ ...c, instagram_cta: v }))}
             />
-            <EditableCol
-              title="X"
-              hook={copy.x_hook}
-              body={copy.x_post}
-              cta={copy.x_cta}
-              onHook={(v) => setCopy((c) => ({ ...c, x_hook: v }))}
-              onBody={(v) => setCopy((c) => ({ ...c, x_post: v }))}
-              onCta={(v) => setCopy((c) => ({ ...c, x_cta: v }))}
-            />
           </>
         ) : (
           <>
@@ -342,12 +327,6 @@ export function DraftDetailClient({
               hook={request.instagram_hook ?? ""}
               body={request.instagram_caption ?? ""}
               cta={request.instagram_cta ?? ""}
-            />
-            <Col
-              title="X"
-              hook={request.x_hook ?? ""}
-              body={request.x_post ?? ""}
-              cta={request.x_cta ?? ""}
             />
           </>
         )}

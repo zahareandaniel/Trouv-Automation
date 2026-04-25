@@ -1,4 +1,3 @@
-import { truncateForX } from "@/lib/post-text";
 import type { TargetPlatform } from "@/lib/types";
 
 export type BufferResult = {
@@ -6,7 +5,7 @@ export type BufferResult = {
   postId: string | null;
   raw: unknown;
   errorMessage: string | null;
-  /** Text actually sent to Buffer (e.g. X after length normalization). */
+  /** Text actually sent to Buffer. */
   sentText: string | null;
 };
 
@@ -45,7 +44,6 @@ function channelId(platform: TargetPlatform): string | undefined {
   const m: Record<TargetPlatform, string | undefined> = {
     linkedin: process.env.BUFFER_LINKEDIN_PROFILE_ID?.trim(),
     instagram: process.env.BUFFER_INSTAGRAM_PROFILE_ID?.trim(),
-    x: process.env.BUFFER_X_PROFILE_ID?.trim(),
   };
   return m[platform];
 }
@@ -108,7 +106,7 @@ export async function queueBufferPost(
     };
   }
 
-  const bodyText = platform === "x" ? truncateForX(text) : text;
+  const bodyText = text;
 
   if (platform === "instagram" && !String(imageUrl ?? "").trim()) {
     return {
@@ -312,7 +310,8 @@ export async function queueBufferPost(
     success: false,
     postId: null,
     raw: null,
-    errorMessage: "HTTP 429 — Buffer rate limit (retries exhausted). Wait a minute and queue X again from Approved.",
+    errorMessage:
+      "HTTP 429 — Buffer rate limit (retries exhausted). Wait a minute and retry from Approved.",
     sentText: bodyText,
   };
 }

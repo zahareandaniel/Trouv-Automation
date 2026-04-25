@@ -4,7 +4,6 @@ import { buildContentPostGenerationPatch } from "@/lib/content-posts/generation-
 import { DB_STATUS_GENERATABLE_RAW } from "@/lib/content-posts/db-filters";
 import { mapRequest } from "@/lib/db-map";
 import { generateSocialCopy } from "@/lib/openai";
-import { assembledXExceedsGraphemeLimit } from "@/lib/post-text";
 import { targetPlatformsFromDb } from "@/lib/platforms";
 import { ensureAppSettings } from "@/lib/settings";
 import { createServiceClient } from "@/lib/supabase/server";
@@ -123,18 +122,6 @@ export async function POST(request: Request) {
   }
 
   const { output } = gen;
-  if (
-    platforms.includes("x") &&
-    assembledXExceedsGraphemeLimit(output)
-  ) {
-    return NextResponse.json(
-      {
-        error:
-          "Generated X copy exceeds the character limit. Regenerate with shorter x_hook, x_post, and x_cta (newlines count).",
-      },
-      { status: 502 },
-    );
-  }
 
   const updatePayload = buildContentPostGenerationPatch(output);
 

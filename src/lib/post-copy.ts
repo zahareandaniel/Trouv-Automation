@@ -17,6 +17,7 @@ const STATUSES_WITH_PUBLISHED_STAGE_COPY_EDIT: ContentPostStatus[] = [
   STATUS_FAILED,
 ];
 
+// X / Twitter removed from pipeline 2026-04-25 — DB columns retained for historical drafts.
 /** True if the post row has any non-empty generated copy fields. */
 export function postHasGeneratedCopy(p: ContentRequest): boolean {
   const parts = [
@@ -26,11 +27,8 @@ export function postHasGeneratedCopy(p: ContentRequest): boolean {
     p.instagram_hook,
     p.instagram_caption,
     p.instagram_cta,
-    p.x_hook,
-    p.x_post,
-    p.x_cta,
   ];
-  return parts.some((x) => x != null && String(x).trim() !== "");
+  return parts.some((s) => s != null && String(s).trim() !== "");
 }
 
 /**

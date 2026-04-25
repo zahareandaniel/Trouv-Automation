@@ -119,7 +119,6 @@ export async function POST(request: Request) {
     .update({
       linkedin_image_url: imageUrl,
       instagram_image_url: imageUrl,
-      x_image_url: imageUrl,
     })
     .eq("id", contentRequestId)
     .select("*")

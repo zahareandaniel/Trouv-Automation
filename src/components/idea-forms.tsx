@@ -5,7 +5,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import type { ContentRequest, TargetPlatform } from "@/lib/types";
 
-const PLATFORMS: TargetPlatform[] = ["linkedin", "instagram", "x"];
+const PLATFORMS: TargetPlatform[] = ["linkedin", "instagram"];
 
 export function NewIdeaForm() {
   const router = useRouter();

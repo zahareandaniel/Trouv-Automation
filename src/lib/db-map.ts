@@ -19,6 +19,7 @@ function hashtagsFromRow(v: unknown): string[] | null {
   return t.length ? t : null;
 }
 
+// X / Twitter removed from pipeline 2026-04-25 — DB columns (x_*) retained for historical drafts.
 /** Map copy + image fields shared on `content_posts`. */
 export function mapPostCopyFields(r: Record<string, unknown>): Pick<
   ContentRequest,
@@ -28,13 +29,9 @@ export function mapPostCopyFields(r: Record<string, unknown>): Pick<
   | "instagram_hook"
   | "instagram_caption"
   | "instagram_cta"
-  | "x_hook"
-  | "x_post"
-  | "x_cta"
   | "hashtags"
   | "linkedin_image_url"
   | "instagram_image_url"
-  | "x_image_url"
 > {
   return {
     linkedin_hook: strOrNull(r.linkedin_hook),
@@ -43,13 +40,9 @@ export function mapPostCopyFields(r: Record<string, unknown>): Pick<
     instagram_hook: strOrNull(r.instagram_hook),
     instagram_caption: strOrNull(r.instagram_caption),
     instagram_cta: strOrNull(r.instagram_cta),
-    x_hook: strOrNull(r.x_hook),
-    x_post: strOrNull(r.x_post),
-    x_cta: strOrNull(r.x_cta),
     hashtags: hashtagsFromRow(r.hashtags),
     linkedin_image_url: strOrNull(r.linkedin_image_url),
     instagram_image_url: strOrNull(r.instagram_image_url),
-    x_image_url: strOrNull(r.x_image_url),
   };
 }
 
@@ -115,8 +108,6 @@ export function mapSettings(r: Record<string, unknown>): AppSettings {
       r.buffer_instagram_profile_id != null
         ? String(r.buffer_instagram_profile_id)
         : null,
-    buffer_x_profile_id:
-      r.buffer_x_profile_id != null ? String(r.buffer_x_profile_id) : null,
     created_at: String(r.created_at ?? ""),
     updated_at: String(r.updated_at ?? ""),
   };

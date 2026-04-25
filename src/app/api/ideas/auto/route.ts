@@ -11,7 +11,6 @@ import {
   generateSocialCopy,
   reviewGeneratedCopy,
 } from "@/lib/openai";
-import { assembledXExceedsGraphemeLimit } from "@/lib/post-text";
 import { targetPlatformsFromDb } from "@/lib/platforms";
 import { ensureAppSettings } from "@/lib/settings";
 import { createServiceClient } from "@/lib/supabase/server";
@@ -79,8 +78,8 @@ export async function POST() {
     );
   }
 
-  // Always target LinkedIn + Instagram
-  const platforms = ["linkedin", "instagram", "x"];
+  // LinkedIn + Instagram only
+  const platforms = ["linkedin", "instagram"];
 
   // ── Step 3: Create the content_post record ──────────────────────────────
   const { data: postRow, error: insertErr } = await supabase
@@ -103,7 +102,6 @@ export async function POST() {
   }
 
   const postId: string = (postRow as Record<string, unknown>).id as string;
-  const req = postRow as Record<string, unknown>;
 
   // ── Step 4: Generate social copy ────────────────────────────────────────
   const resolvedPlatforms = targetPlatformsFromDb(platforms);
@@ -121,20 +119,6 @@ export async function POST() {
   } catch (e) {
     return NextResponse.json(
       { error: e instanceof Error ? e.message : "Copy generation failed", postId },
-      { status: 502 },
-    );
-  }
-
-  if (
-    resolvedPlatforms.includes("x") &&
-    assembledXExceedsGraphemeLimit(gen.output)
-  ) {
-    return NextResponse.json(
-      {
-        error:
-          "Generated X copy exceeds the character limit. Regenerate with shorter x_hook, x_post, and x_cta (newlines count).",
-        postId,
-      },
       { status: 502 },
     );
   }
@@ -252,7 +236,6 @@ export async function POST() {
             .update({
               linkedin_image_url: imageUrl,
               instagram_image_url: imageUrl,
-              x_image_url: imageUrl,
             })
             .eq("id", postId);
         }

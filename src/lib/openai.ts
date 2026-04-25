@@ -2,7 +2,6 @@ import Anthropic from "@anthropic-ai/sdk";
 import OpenAI from "openai";
 import type { AppSettings } from "@/lib/types";
 import type { TargetPlatform } from "@/lib/types";
-import { X_POST_MAX_CHARS } from "@/lib/post-text";
 import {
   generationOutputSchema,
   reviewOutputSchema,
@@ -130,10 +129,6 @@ ${uniqueHooks.map((h, i) => `${i + 1}. "${h}"`).join("\n")}
 Write something genuinely fresh that a reader would never confuse with any post above.`
     : "";
 
-  const xCharBlock = input.platforms.includes("x")
-    ? `\n\nX / Twitter hard limit: The final X post is assembled as x_hook, then a blank line, then x_post, then a blank line, then x_cta (each non-empty part separated by two newlines, which count toward the limit). The total character count of that assembled string must be ${X_POST_MAX_CHARS} or fewer — including every newline. Be concise; cut words before hitting the limit.`
-    : "";
-
   const appBanned =
     banned.length > 0
       ? `\n\nApp-configured banned phrases (do not use): ${banned.join("; ")}`
@@ -146,14 +141,13 @@ Secondary tone note from app settings (must not override the playbook): ${brandT
 
 Target platforms for this request: ${input.platforms.join(", ")}.
 For each target platform, fill hook, body, and CTA fields (linkedin_hook / linkedin_post / linkedin_cta, etc.).
-For platforms NOT in the target list, use empty strings for all three fields.${appBanned}${feedbackBlock}${hooksBlock}${xCharBlock}
+For platforms NOT in the target list, use empty strings for all three fields.${appBanned}${feedbackBlock}${hooksBlock}
 
 API OUTPUT (required)
 Return JSON only — no markdown, no preamble, no keys beyond those listed.
 Exactly these keys:
 linkedin_hook, linkedin_post, linkedin_cta,
 instagram_hook, instagram_caption, instagram_cta,
-x_hook, x_post, x_cta,
 hashtags (array of strings, no leading #; at most 3 items, often [])`;
 
   const user = JSON.stringify({
@@ -238,7 +232,7 @@ You MUST respond with valid JSON only — no markdown, no code fences, no explan
   "quality_verdict": "approve" | "revise" | "reject",
   "problems_found": string[],
   "specific_fixes": string[],
-  "revised_suggestions": { "linkedin": string, "instagram": string, "x": string }
+  "revised_suggestions": { "linkedin": string, "instagram": string }
 }`;
 
   const userMsg = JSON.stringify({
