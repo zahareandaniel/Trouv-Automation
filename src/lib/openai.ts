@@ -1,5 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
 import OpenAI from "openai";
+import { ZodError } from "zod";
 import type { AppSettings } from "@/lib/types";
 import type { TargetPlatform } from "@/lib/types";
 import {
@@ -13,6 +14,12 @@ import {
   TROUV_COPY_PLAYBOOK,
   TROUV_REVIEW_RUBRIC,
 } from "@/lib/trouv-copy-playbook";
+
+const LOG_RAW_MAX = 2000;
+
+function zodFailureIssues(err: unknown): ZodError["issues"] | null {
+  return err instanceof ZodError ? err.issues : null;
+}
 
 function bannedList(settings: AppSettings | null): string[] {
   const b = settings?.banned_phrases;
@@ -76,12 +83,37 @@ Return JSON only — no markdown, no explanation.`;
   const raw = completion.choices[0]?.message?.content;
   if (!raw) throw new Error("Empty OpenAI response for idea brief");
 
+  console.log(
+    JSON.stringify({
+      event: "idea_response_received",
+      timestamp: new Date().toISOString(),
+      raw_text: raw.slice(0, LOG_RAW_MAX),
+      length: raw.length,
+    }),
+  );
+
   let parsed: unknown;
   try {
     parsed = JSON.parse(raw);
   } catch {
-    throw new Error("OpenAI returned invalid JSON for idea brief");
+    const err = new Error("OpenAI returned invalid JSON for idea brief");
+    console.error(
+      JSON.stringify({
+        event: "idea_zod_validation_failed",
+        error: err.message,
+        received: { raw_text: raw.slice(0, LOG_RAW_MAX), length: raw.length },
+        zod_issues: null,
+      }),
+    );
+    throw err;
   }
+
+  console.log(
+    JSON.stringify({
+      event: "idea_response_parsed",
+      parsed,
+    }),
+  );
 
   const obj = parsed as Record<string, unknown>;
   const topic = String(obj.topic ?? "").trim();
@@ -89,7 +121,16 @@ Return JSON only — no markdown, no explanation.`;
   const content_type = String(obj.content_type ?? "").trim();
 
   if (!topic || !audience || !content_type) {
-    throw new Error("Incomplete idea brief from OpenAI");
+    const err = new Error("Incomplete idea brief from OpenAI");
+    console.error(
+      JSON.stringify({
+        event: "idea_zod_validation_failed",
+        error: err.message,
+        received: parsed,
+        zod_issues: null,
+      }),
+    );
+    throw err;
   }
 
   return { topic, audience, content_type };
@@ -164,22 +205,60 @@ hashtags (array of strings, no leading #; at most 3 items, often [])`;
     maxTokens: 1024,
   });
 
+  console.log(
+    JSON.stringify({
+      event: "writer_response_received",
+      timestamp: new Date().toISOString(),
+      raw_text: raw.slice(0, LOG_RAW_MAX),
+      length: raw.length,
+    }),
+  );
+
   let parsed: unknown;
   try {
     const jsonMatch = raw.match(/\{[\s\S]*\}/);
     if (!jsonMatch) throw new Error("no JSON object");
     parsed = JSON.parse(jsonMatch[0]);
-  } catch {
-    throw new Error("Claude returned invalid JSON for social generation");
+  } catch (writeParseErr) {
+    const err =
+      writeParseErr instanceof Error
+        ? new Error(
+            `Claude returned invalid JSON for social generation: ${writeParseErr.message}`,
+          )
+        : new Error("Claude returned invalid JSON for social generation");
+    console.error(
+      JSON.stringify({
+        event: "writer_zod_validation_failed",
+        error: err.message,
+        received: { raw_text: raw.slice(0, LOG_RAW_MAX), length: raw.length },
+        zod_issues: null,
+      }),
+    );
+    throw err;
   }
 
-  const out = generationOutputSchema.safeParse(parsed);
-  if (!out.success) {
-    throw new Error(
-      out.error.issues.map((i) => i.message).join("; "),
+  console.log(
+    JSON.stringify({
+      event: "writer_response_parsed",
+      parsed,
+    }),
+  );
+
+  let output: GenerationOutput;
+  try {
+    output = generationOutputSchema.parse(parsed);
+  } catch (err) {
+    console.error(
+      JSON.stringify({
+        event: "writer_zod_validation_failed",
+        error: err instanceof Error ? err.message : String(err),
+        received: parsed,
+        zod_issues: zodFailureIssues(err),
+      }),
     );
+    throw err;
   }
-  return { output: out.data, model };
+  return { output, model };
 }
 
 export async function reviewGeneratedCopy(input: {
@@ -256,18 +335,58 @@ You MUST respond with valid JSON only — no markdown, no code fences, no explan
   const raw = textBlock?.text;
   if (!raw) throw new Error("Empty Claude review response");
 
+  console.log(
+    JSON.stringify({
+      event: "review_response_received",
+      timestamp: new Date().toISOString(),
+      raw_text: raw.slice(0, LOG_RAW_MAX),
+      length: raw.length,
+    }),
+  );
+
   let parsed: unknown;
   try {
     const jsonMatch = raw.match(/\{[\s\S]*\}/);
     if (!jsonMatch) throw new Error("no JSON object");
     parsed = JSON.parse(jsonMatch[0]);
-  } catch {
-    throw new Error("Claude review response was not valid JSON");
+  } catch (reviewParseErr) {
+    const err =
+      reviewParseErr instanceof Error
+        ? new Error(
+            `Claude review response was not valid JSON: ${reviewParseErr.message}`,
+          )
+        : new Error("Claude review response was not valid JSON");
+    console.error(
+      JSON.stringify({
+        event: "review_zod_validation_failed",
+        error: err.message,
+        received: { raw_text: raw.slice(0, LOG_RAW_MAX), length: raw.length },
+        zod_issues: null,
+      }),
+    );
+    throw err;
   }
 
-  const out = reviewOutputSchema.safeParse(parsed);
-  if (!out.success) {
-    throw new Error(out.error.issues.map((i) => i.message).join("; "));
+  console.log(
+    JSON.stringify({
+      event: "review_response_parsed",
+      parsed,
+    }),
+  );
+
+  let output: ReviewOutput;
+  try {
+    output = reviewOutputSchema.parse(parsed);
+  } catch (err) {
+    console.error(
+      JSON.stringify({
+        event: "review_zod_validation_failed",
+        error: err instanceof Error ? err.message : String(err),
+        received: parsed,
+        zod_issues: zodFailureIssues(err),
+      }),
+    );
+    throw err;
   }
-  return { output: out.data, model };
+  return { output, model };
 }

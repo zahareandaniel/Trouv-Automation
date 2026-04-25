@@ -45,69 +45,77 @@ export async function POST() {
     );
   }
 
-  // ── Step 2: Fetch last 60 days of posts to avoid duplicates ─────────────
-  const sixtyDaysAgo = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString();
+  let currentStep:
+    | "fetch_recent"
+    | "idea"
+    | "create_post"
+    | "write"
+    | "save_copy"
+    | "review"
+    | "save_review"
+    | "image"
+    | "return" = "fetch_recent";
+  let postId: string | undefined;
 
-  const { data: recentRows } = await supabase
-    .from("content_posts")
-    .select("topic, linkedin_hook, instagram_hook, linkedin_post, instagram_caption")
-    .gte("created_at", sixtyDaysAgo)
-    .order("created_at", { ascending: false });
-
-  const rows = (recentRows ?? []) as Record<string, unknown>[];
-
-  const recentTopics = rows
-    .map((r) => String(r.topic ?? "").trim())
-    .filter(Boolean);
-
-  const recentHooks = rows
-    .flatMap((r) => [
-      String(r.linkedin_hook ?? "").trim(),
-      String(r.instagram_hook ?? "").trim(),
-    ])
-    .filter((h) => h.length > 10);
-
-  // ── Step 3: OpenAI generates the idea brief ─────────────────────────────
-  let brief: { topic: string; audience: string; content_type: string };
   try {
-    brief = await generateIdeaBrief(settings, recentTopics);
-  } catch (e) {
-    return NextResponse.json(
-      { error: e instanceof Error ? e.message : "Idea generation failed" },
-      { status: 502 },
-    );
-  }
+    // ── Step 2: Fetch last 60 days of posts to avoid duplicates ─────────────
+    currentStep = "fetch_recent";
+    const sixtyDaysAgo = new Date(
+      Date.now() - 60 * 24 * 60 * 60 * 1000,
+    ).toISOString();
 
-  // LinkedIn + Instagram only
-  const platforms = ["linkedin", "instagram"];
+    const { data: recentRows } = await supabase
+      .from("content_posts")
+      .select(
+        "topic, linkedin_hook, instagram_hook, linkedin_post, instagram_caption",
+      )
+      .gte("created_at", sixtyDaysAgo)
+      .order("created_at", { ascending: false });
 
-  // ── Step 3: Create the content_post record ──────────────────────────────
-  const { data: postRow, error: insertErr } = await supabase
-    .from("content_posts")
-    .insert({
-      topic: brief.topic,
-      audience: brief.audience,
-      content_type: brief.content_type,
-      platforms,
-      status: STATUS_IDEA,
-    })
-    .select("*")
-    .single();
+    const rows = (recentRows ?? []) as Record<string, unknown>[];
 
-  if (insertErr || !postRow) {
-    return NextResponse.json(
-      { error: insertErr?.message ?? "Failed to create post" },
-      { status: 500 },
-    );
-  }
+    const recentTopics = rows
+      .map((r) => String(r.topic ?? "").trim())
+      .filter(Boolean);
 
-  const postId: string = (postRow as Record<string, unknown>).id as string;
+    const recentHooks = rows
+      .flatMap((r) => [
+        String(r.linkedin_hook ?? "").trim(),
+        String(r.instagram_hook ?? "").trim(),
+      ])
+      .filter((h) => h.length > 10);
 
-  // ── Step 4: Generate social copy ────────────────────────────────────────
-  const resolvedPlatforms = targetPlatformsFromDb(platforms);
-  let gen;
-  try {
-    gen = await generateSocialCopy({
+    // ── OpenAI: idea brief ─────────────────────────────────────────────
+    currentStep = "idea";
+    const brief = await generateIdeaBrief(settings, recentTopics);
+
+    // LinkedIn + Instagram only
+    const platforms = ["linkedin", "instagram"];
+
+    // ── Create the content_post record ─────────────────────────────────
+    currentStep = "create_post";
+    const { data: postRow, error: insertErr } = await supabase
+      .from("content_posts")
+      .insert({
+        topic: brief.topic,
+        audience: brief.audience,
+        content_type: brief.content_type,
+        platforms,
+        status: STATUS_IDEA,
+      })
+      .select("*")
+      .single();
+
+    if (insertErr || !postRow) {
+      throw new Error(insertErr?.message ?? "Failed to create post");
+    }
+
+    postId = (postRow as Record<string, unknown>).id as string;
+
+    // ── Generate social copy ───────────────────────────────────────────
+    currentStep = "write";
+    const resolvedPlatforms = targetPlatformsFromDb(platforms);
+    const gen = await generateSocialCopy({
       topic: brief.topic,
       audience: brief.audience,
       content_type: brief.content_type,
@@ -116,149 +124,152 @@ export async function POST() {
       reviewFeedback: null,
       recentHooks,
     });
-  } catch (e) {
-    return NextResponse.json(
-      { error: e instanceof Error ? e.message : "Copy generation failed", postId },
-      { status: 502 },
-    );
-  }
 
-  const updatePayload = buildContentPostGenerationPatch(gen.output);
-  const { data: updPost, error: upErr } = await supabase
-    .from("content_posts")
-    .update(updatePayload)
-    .eq("id", postId)
-    .select("*")
-    .single();
+    const updatePayload = buildContentPostGenerationPatch(gen.output);
+    currentStep = "save_copy";
+    const { data: updPost, error: upErr } = await supabase
+      .from("content_posts")
+      .update(updatePayload)
+      .eq("id", postId)
+      .select("*")
+      .single();
 
-  if (upErr || !updPost) {
-    return NextResponse.json(
-      { error: upErr?.message ?? "Failed to save copy", postId },
-      { status: 500 },
-    );
-  }
+    if (upErr || !updPost) {
+      throw new Error(upErr?.message ?? "Failed to save copy");
+    }
 
-  // ── Step 5: Claude reviews the copy ────────────────────────────────────
-  const mappedPost = mapRequest(updPost as Record<string, unknown>);
-  const draftOutput = postCopyToGenerationOutput(mappedPost);
+    // ── Review ──────────────────────────────────────────────────────────
+    currentStep = "review";
+    const mappedPost = mapRequest(updPost as Record<string, unknown>);
+    const draftOutput = postCopyToGenerationOutput(mappedPost);
 
-  let rev;
-  try {
-    rev = await reviewGeneratedCopy({
+    const rev = await reviewGeneratedCopy({
       topic: brief.topic,
       audience: brief.audience,
       content_type: brief.content_type,
       generated: draftOutput,
       settings,
     });
-  } catch (e) {
-    return NextResponse.json(
-      { error: e instanceof Error ? e.message : "Review failed", postId },
-      { status: 502 },
+
+    const verdict = String(rev.output.quality_verdict).trim().toLowerCase();
+    const safeVerdict = (["approve", "revise", "reject"] as const).includes(
+      verdict as "approve" | "revise" | "reject",
+    )
+      ? verdict
+      : "revise";
+
+    currentStep = "save_review";
+    const { data: revRow, error: revErr } = await supabase
+      .from("content_reviews")
+      .insert({
+        content_request_id: postId,
+        generated_content_id: null,
+        overall_score: rev.output.overall_score,
+        brand_alignment_score: rev.output.brand_alignment_score,
+        clarity_score: rev.output.clarity_score,
+        quality_verdict: safeVerdict,
+        problems_found: rev.output.problems_found,
+        specific_fixes: rev.output.specific_fixes,
+        revised_suggestions: rev.output.revised_suggestions,
+        raw_response: rev.output as unknown as Record<string, unknown>,
+        reviewed_by_model: rev.model,
+      })
+      .select("*")
+      .single();
+
+    if (revErr) {
+      throw new Error(revErr.message);
+    }
+
+    // ── Optional: image ────────────────────────────────────────────────
+    currentStep = "image";
+    const googleApiKey = process.env.GOOGLE_AI_API_KEY?.trim();
+    let imageUrl: string | null = null;
+
+    if (googleApiKey) {
+      try {
+        const prompt = buildImagePrompt({
+          topic: brief.topic,
+          audience: brief.audience,
+          contentType: brief.content_type,
+        });
+
+        const ai = new GoogleGenAI({ apiKey: googleApiKey });
+        const imgResponse = await ai.models.generateContent({
+          model: "gemini-3.1-flash-image-preview",
+          contents: prompt,
+          config: { responseModalities: ["TEXT", "IMAGE"] },
+        });
+
+        let base64Data: string | undefined;
+        for (const part of imgResponse.candidates?.[0]?.content?.parts ?? []) {
+          if (part.inlineData?.data) {
+            base64Data = part.inlineData.data;
+            break;
+          }
+        }
+
+        if (base64Data) {
+          const raw = Buffer.from(base64Data, "base64");
+          const imageBuffer = await normalizeSocialCardImage(raw);
+          const fileName = `${postId}-${Date.now()}.jpg`;
+
+          const { error: upErr2 } = await supabase.storage
+            .from("post-images")
+            .upload(fileName, imageBuffer, { contentType: "image/jpeg", upsert: true });
+
+          if (!upErr2) {
+            imageUrl = supabase.storage
+              .from("post-images")
+              .getPublicUrl(fileName).data.publicUrl;
+
+            await supabase
+              .from("content_posts")
+              .update({
+                linkedin_image_url: imageUrl,
+                instagram_image_url: imageUrl,
+              })
+              .eq("id", postId);
+          }
+        }
+      } catch {
+        // Image generation is non-fatal — continue without image
+      }
+    }
+
+    currentStep = "return";
+    const { data: finalPost } = await supabase
+      .from("content_posts")
+      .select("*")
+      .eq("id", postId)
+      .single();
+
+    return NextResponse.json({
+      postId,
+      brief,
+      review: revRow ? mapReview(revRow as Record<string, unknown>) : null,
+      request: finalPost
+        ? mapRequest(finalPost as Record<string, unknown>)
+        : null,
+      imageUrl,
+    });
+  } catch (err) {
+    console.error(
+      JSON.stringify({
+        event: "auto_pipeline_failed",
+        step: currentStep,
+        post_id: postId ?? null,
+        error: err instanceof Error ? err.message : String(err),
+        stack: err instanceof Error ? err.stack : null,
+        timestamp: new Date().toISOString(),
+      }),
     );
-  }
-
-  const verdict = String(rev.output.quality_verdict).trim().toLowerCase();
-  const safeVerdict = (["approve", "revise", "reject"] as const).includes(
-    verdict as "approve" | "revise" | "reject",
-  )
-    ? verdict
-    : "revise";
-
-  const { data: revRow, error: revErr } = await supabase
-    .from("content_reviews")
-    .insert({
-      content_request_id: postId,
-      generated_content_id: null,
-      overall_score: rev.output.overall_score,
-      brand_alignment_score: rev.output.brand_alignment_score,
-      clarity_score: rev.output.clarity_score,
-      quality_verdict: safeVerdict,
-      problems_found: rev.output.problems_found,
-      specific_fixes: rev.output.specific_fixes,
-      revised_suggestions: rev.output.revised_suggestions,
-      raw_response: rev.output as unknown as Record<string, unknown>,
-      reviewed_by_model: rev.model,
-    })
-    .select("*")
-    .single();
-
-  if (revErr) {
     return NextResponse.json(
-      { error: revErr.message, postId },
+      {
+        error: err instanceof Error ? err.message : "Unknown error",
+        ...(postId != null ? { postId } : {}),
+      },
       { status: 500 },
     );
   }
-
-  // ── Step 6: Gemini generates the branded card image ────────────────────
-  const googleApiKey = process.env.GOOGLE_AI_API_KEY?.trim();
-  let imageUrl: string | null = null;
-
-  if (googleApiKey) {
-    try {
-      const prompt = buildImagePrompt({
-        topic: brief.topic,
-        audience: brief.audience,
-        contentType: brief.content_type,
-      });
-
-      const ai = new GoogleGenAI({ apiKey: googleApiKey });
-      const imgResponse = await ai.models.generateContent({
-        model: "gemini-3.1-flash-image-preview",
-        contents: prompt,
-        config: { responseModalities: ["TEXT", "IMAGE"] },
-      });
-
-      let base64Data: string | undefined;
-      for (const part of imgResponse.candidates?.[0]?.content?.parts ?? []) {
-        if (part.inlineData?.data) {
-          base64Data = part.inlineData.data;
-          break;
-        }
-      }
-
-      if (base64Data) {
-        const raw = Buffer.from(base64Data, "base64");
-        const imageBuffer = await normalizeSocialCardImage(raw);
-        const fileName = `${postId}-${Date.now()}.jpg`;
-
-        const { error: upErr2 } = await supabase.storage
-          .from("post-images")
-          .upload(fileName, imageBuffer, { contentType: "image/jpeg", upsert: true });
-
-        if (!upErr2) {
-          imageUrl = supabase.storage
-            .from("post-images")
-            .getPublicUrl(fileName).data.publicUrl;
-
-          await supabase
-            .from("content_posts")
-            .update({
-              linkedin_image_url: imageUrl,
-              instagram_image_url: imageUrl,
-            })
-            .eq("id", postId);
-        }
-      }
-    } catch {
-      // Image generation is non-fatal — continue without image
-    }
-  }
-
-  // ── Return the result ───────────────────────────────────────────────────
-  const { data: finalPost } = await supabase
-    .from("content_posts")
-    .select("*")
-    .eq("id", postId)
-    .single();
-
-  return NextResponse.json({
-    postId,
-    brief,
-    review: revRow ? mapReview(revRow as Record<string, unknown>) : null,
-    request: finalPost
-      ? mapRequest(finalPost as Record<string, unknown>)
-      : null,
-    imageUrl,
-  });
 }

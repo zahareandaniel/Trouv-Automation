@@ -57,23 +57,24 @@ export const generationOutputSchema = z.object({
 /** Same shape as AI output — full replace when editing copy after approval. */
 export const replacePostCopyBodySchema = generationOutputSchema;
 
-const VALID_VERDICTS = ["approve", "revise", "reject"] as const;
-
-const normalizeVerdict = z.preprocess((v) => {
-  if (typeof v !== "string") return v;
-  const lower = v.trim().toLowerCase();
-  if (VALID_VERDICTS.includes(lower as (typeof VALID_VERDICTS)[number])) return lower;
-  for (const vv of VALID_VERDICTS) {
-    if (lower.startsWith(vv)) return vv;
-  }
-  return lower;
-}, z.enum(VALID_VERDICTS));
+const qualityVerdict = z.preprocess(
+  (val) => {
+    if (typeof val !== "string") return val;
+    const normalized = val.toLowerCase().trim();
+    if (normalized === "approved" || normalized === "approve") return "approve";
+    if (normalized === "revised" || normalized === "revise" || normalized === "needs revision")
+      return "revise";
+    if (normalized === "rejected" || normalized === "reject") return "reject";
+    return normalized;
+  },
+  z.enum(["approve", "revise", "reject"]),
+);
 
 export const reviewOutputSchema = z.object({
   overall_score: z.number(),
   brand_alignment_score: z.number(),
   clarity_score: z.number(),
-  quality_verdict: normalizeVerdict,
+  quality_verdict: qualityVerdict,
   problems_found: z.array(z.string()),
   specific_fixes: z.array(z.string()),
   revised_suggestions: z.object({
